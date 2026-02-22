@@ -4,7 +4,7 @@
 # including SSL certificate deployment and .env configuration.
 #
 # @param enabled
-#   Whether this integration is enabled (managed by main class)
+#   Whether the integration is enabled (sets PUPPETDB_ENABLED in .env)
 #
 # @param server_url
 #   PuppetDB server URL (e.g., https://puppetdb.example.com)
@@ -38,32 +38,28 @@
 #
 # @example Basic usage
 #   class { 'pabawi':
-#     integrations => {
-#       'puppetdb' => {
-#         'enabled' => true,
-#         'server_url' => 'https://puppetdb.example.com',
-#       },
-#     },
+#     integrations => ['puppetdb'],
 #   }
+#
+#   # Configure via Hiera
+#   pabawi::integrations::puppetdb::server_url: 'https://puppetdb.example.com'
 #
 # @example With SSL certificates from sources
 #   class { 'pabawi':
-#     integrations => {
-#       'puppetdb' => {
-#         'enabled' => true,
-#         'server_url' => 'https://puppetdb.example.com',
-#         'ssl_ca' => '/etc/pabawi/ssl/puppetdb/ca.pem',
-#         'ssl_cert' => '/etc/pabawi/ssl/puppetdb/cert.pem',
-#         'ssl_key' => '/etc/pabawi/ssl/puppetdb/key.pem',
-#         'ssl_ca_source' => 'file:///etc/puppetlabs/puppet/ssl/certs/ca.pem',
-#         'ssl_cert_source' => 'file:///etc/puppetlabs/puppet/ssl/certs/agent.pem',
-#         'ssl_key_source' => 'file:///etc/puppetlabs/puppet/ssl/private_keys/agent.pem',
-#       },
-#     },
+#     integrations => ['puppetdb'],
 #   }
 #
+#   # Configure via Hiera
+#   pabawi::integrations::puppetdb::server_url: 'https://puppetdb.example.com'
+#   pabawi::integrations::puppetdb::ssl_ca: '/etc/pabawi/ssl/puppetdb/ca.pem'
+#   pabawi::integrations::puppetdb::ssl_cert: '/etc/pabawi/ssl/puppetdb/cert.pem'
+#   pabawi::integrations::puppetdb::ssl_key: '/etc/pabawi/ssl/puppetdb/key.pem'
+#   pabawi::integrations::puppetdb::ssl_ca_source: 'file:///etc/puppetlabs/puppet/ssl/certs/ca.pem'
+#   pabawi::integrations::puppetdb::ssl_cert_source: 'file:///etc/puppetlabs/puppet/ssl/certs/agent.pem'
+#   pabawi::integrations::puppetdb::ssl_key_source: 'file:///etc/puppetlabs/puppet/ssl/private_keys/agent.pem'
+#
 class pabawi::integrations::puppetdb (
-  Boolean $enabled = false,
+  Boolean $enabled = true,
   Optional[String[1]] $server_url = undef,
   Integer $port = 8081,
   Boolean $ssl_enabled = true,

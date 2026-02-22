@@ -4,7 +4,7 @@
 # including control repository management and .env configuration.
 #
 # @param enabled
-#   Whether this integration is enabled (managed by main class)
+#   Whether the integration is enabled (sets HIERA_ENABLED in .env)
 #
 # @param manage_package
 #   Whether to install hiera package (if separate package needed)
@@ -29,28 +29,26 @@
 #
 # @example Basic usage
 #   class { 'pabawi':
-#     integrations => {
-#       'hiera' => {
-#         'enabled' => true,
-#         'control_repo_path' => '/opt/control-repo',
-#       },
-#     },
+#     integrations => ['hiera'],
 #   }
+#
+#   # Configure via Hiera
+#   pabawi::integrations::hiera::control_repo_path: '/opt/control-repo'
 #
 # @example With git repository
 #   class { 'pabawi':
-#     integrations => {
-#       'hiera' => {
-#         'enabled' => true,
-#         'control_repo_path' => '/opt/control-repo',
-#         'control_repo_source' => 'https://github.com/example/control-repo.git',
-#         'environments' => ['production', 'development'],
-#       },
-#     },
+#     integrations => ['hiera'],
 #   }
 #
+#   # Configure via Hiera
+#   pabawi::integrations::hiera::control_repo_path: '/opt/control-repo'
+#   pabawi::integrations::hiera::control_repo_source: 'https://github.com/example/control-repo.git'
+#   pabawi::integrations::hiera::environments:
+#     - 'production'
+#     - 'development'
+#
 class pabawi::integrations::hiera (
-  Boolean $enabled = false,
+  Boolean $enabled = true,
   Boolean $manage_package = false,
   Optional[Stdlib::Absolutepath] $control_repo_path = undef,
   Optional[String[1]] $control_repo_source = undef,

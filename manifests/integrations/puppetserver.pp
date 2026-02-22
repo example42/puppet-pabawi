@@ -4,7 +4,7 @@
 # including SSL certificate deployment and .env configuration.
 #
 # @param enabled
-#   Whether this integration is enabled (managed by main class)
+#   Whether the integration is enabled (sets PUPPETSERVER_ENABLED in .env)
 #
 # @param server_url
 #   Puppet Server URL (e.g., https://puppet.example.com)
@@ -53,16 +53,14 @@
 #
 # @example Basic usage
 #   class { 'pabawi':
-#     integrations => {
-#       'puppetserver' => {
-#         'enabled' => true,
-#         'server_url' => 'https://puppet.example.com',
-#       },
-#     },
+#     integrations => ['puppetserver'],
 #   }
 #
+#   # Configure via Hiera
+#   pabawi::integrations::puppetserver::server_url: 'https://puppet.example.com'
+#
 class pabawi::integrations::puppetserver (
-  Boolean $enabled = false,
+  Boolean $enabled = true,
   Optional[String[1]] $server_url = undef,
   Integer $port = 8140,
   Boolean $ssl_enabled = true,

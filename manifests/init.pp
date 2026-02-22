@@ -21,19 +21,9 @@
 #   Default: 'pabawi::install::npm'
 #
 # @param integrations
-#   Hash of integrations to configure. Keys are integration names,
-#   values are hashes containing 'enabled' boolean plus integration-specific configuration.
-#   Example: {
-#     'bolt' => {
-#       'enabled' => true,
-#       'project_path' => '/opt/bolt-project',
-#       'command_whitelist' => ['ls', 'pwd'],
-#     },
-#     'puppetdb' => {
-#       'enabled' => true,
-#       'server_url' => 'https://puppetdb.example.com:8081',
-#     },
-#   }
+#   Array of integration names to enable. Integration-specific configuration
+#   is managed via class parameters in Hiera.
+#   Example: ['bolt', 'puppetdb', 'hiera']
 #
 # @example Basic usage with defaults
 #   include pabawi
@@ -50,16 +40,7 @@
 #
 # @example Enable integrations
 #   class { 'pabawi':
-#     integrations => {
-#       'bolt' => {
-#         'enabled' => true,
-#         'project_path' => '/opt/bolt-project',
-#       },
-#       'puppetdb' => {
-#         'enabled' => true,
-#         'server_url' => 'https://puppetdb.example.com:8081',
-#       },
-#     },
+#     integrations => ['bolt', 'puppetdb'],
 #   }
 #
 class pabawi (
@@ -67,7 +48,7 @@ class pabawi (
   String[1] $proxy_class = 'pabawi::proxy::nginx',
   Boolean $install_manage = true,
   String[1] $install_class = 'pabawi::install::npm',
-  Hash[String[1], Hash] $integrations = {},
+  Array[String[1]] $integrations = [],
 ) {
   # Validate proxy_class is a valid class name format
   if $proxy_manage {
@@ -83,12 +64,7 @@ class pabawi (
     }
   }
 
-  # Validate integrations hash structure
-  $integrations.each |String $name, Hash $config| {
-    unless $config['enabled'] =~ Boolean {
-      fail("Integration '${name}' must have an 'enabled' boolean key")
-    }
-  }
+  # No validation needed for integrations array - just a list of names
 
   # Conditionally include proxy class
   if $proxy_manage {
@@ -104,23 +80,15 @@ class pabawi (
     include $install_class
   }
 
-  # Process integrations from hash
-  $integrations.each |String $name, Hash $config| {
-    if $config['enabled'] {
-      $integration_class = "pabawi::integrations::${name}"
+  # Process integrations - simply include each class
+  $integrations.each |String $name| {
+    $integration_class = "pabawi::integrations::${name}"
 
-      # Log that we're attempting to enable this integration
-      notify { "pabawi_integration_${name}":
-        message  => "Enabling integration: ${integration_class}",
-        loglevel => 'notice',
-      }
-
-      # Include the integration class with its configuration
-      # Remove the 'enabled' key and pass remaining config as parameters
-      $integration_params = $config.filter |$key, $value| { $key != 'enabled' }
-      class { $integration_class:
-        * => $integration_params,
-      }
+    notify { "pabawi_integration_${name}":
+      message  => "Enabling integration: ${integration_class}",
+      loglevel => 'notice',
     }
+
+    include $integration_class
   }
 }

@@ -4,7 +4,7 @@
 # including inventory and playbook management and .env configuration.
 #
 # @param enabled
-#   Whether this integration is enabled (managed by main class)
+#   Whether the integration is enabled (sets ANSIBLE_ENABLED in .env)
 #
 # @param manage_package
 #   Whether to install ansible package
@@ -29,30 +29,26 @@
 #
 # @example Basic usage
 #   class { 'pabawi':
-#     integrations => {
-#       'ansible' => {
-#         'enabled' => true,
-#         'inventory_path' => '/etc/ansible/inventory',
-#         'playbook_path' => '/etc/ansible/playbooks',
-#       },
-#     },
+#     integrations => ['ansible'],
 #   }
+#
+#   # Configure via Hiera
+#   pabawi::integrations::ansible::inventory_path: '/etc/ansible/inventory'
+#   pabawi::integrations::ansible::playbook_path: '/etc/ansible/playbooks'
 #
 # @example With git repositories
 #   class { 'pabawi':
-#     integrations => {
-#       'ansible' => {
-#         'enabled' => true,
-#         'inventory_path' => '/etc/ansible/inventory',
-#         'inventory_source' => 'https://github.com/example/ansible-inventory.git',
-#         'playbook_path' => '/etc/ansible/playbooks',
-#         'playbook_source' => 'https://github.com/example/ansible-playbooks.git',
-#       },
-#     },
+#     integrations => ['ansible'],
 #   }
 #
+#   # Configure via Hiera
+#   pabawi::integrations::ansible::inventory_path: '/etc/ansible/inventory'
+#   pabawi::integrations::ansible::inventory_source: 'https://github.com/example/ansible-inventory.git'
+#   pabawi::integrations::ansible::playbook_path: '/etc/ansible/playbooks'
+#   pabawi::integrations::ansible::playbook_source: 'https://github.com/example/ansible-playbooks.git'
+#
 class pabawi::integrations::ansible (
-  Boolean $enabled = false,
+  Boolean $enabled = true,
   Boolean $manage_package = false,
   Optional[Stdlib::Absolutepath] $inventory_path = undef,
   Optional[String[1]] $inventory_source = undef,

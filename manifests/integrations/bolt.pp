@@ -5,7 +5,7 @@
 # and project repository.
 #
 # @param enabled
-#   Whether this integration is enabled (managed by main class)
+#   Whether the integration is enabled (sets BOLT_ENABLED in .env)
 #
 # @param manage_package
 #   Whether to install the bolt package
@@ -27,28 +27,26 @@
 #
 # @example Basic usage via main class
 #   class { 'pabawi':
-#     integrations => {
-#       'bolt' => {
-#         'enabled' => true,
-#         'project_path' => '/opt/bolt-project',
-#       },
-#     },
+#     integrations => ['bolt'],
 #   }
+#
+#   # Configure via Hiera
+#   pabawi::integrations::bolt::project_path: '/opt/bolt-project'
 #
 # @example With git repository
 #   class { 'pabawi':
-#     integrations => {
-#       'bolt' => {
-#         'enabled' => true,
-#         'project_path' => '/opt/bolt-project',
-#         'project_path_source' => 'https://github.com/example/bolt-project.git',
-#         'command_whitelist' => ['plan run', 'task run'],
-#       },
-#     },
+#     integrations => ['bolt'],
 #   }
 #
+#   # Configure via Hiera
+#   pabawi::integrations::bolt::project_path: '/opt/bolt-project'
+#   pabawi::integrations::bolt::project_path_source: 'https://github.com/example/bolt-project.git'
+#   pabawi::integrations::bolt::command_whitelist:
+#     - 'plan run'
+#     - 'task run'
+#
 class pabawi::integrations::bolt (
-  Boolean $enabled = false,
+  Boolean $enabled = true,
   Boolean $manage_package = false,
   Optional[Stdlib::Absolutepath] $project_path = undef,
   Optional[String[1]] $project_path_source = undef,
@@ -91,6 +89,7 @@ class pabawi::integrations::bolt (
     target  => 'pabawi_env_file',
     content => @("EOT"),
       # Bolt Integration
+      BOLT_ENABLED=${enabled}
       BOLT_PROJECT_PATH=${project_path}
       BOLT_COMMAND_WHITELIST=${stdlib::to_json($command_whitelist)}
       BOLT_COMMAND_WHITELIST_ALLOW_ALL=${command_whitelist_allow_all}
