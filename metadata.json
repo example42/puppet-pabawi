@@ -1,0 +1,72 @@
+{
+  "name": "example42-pabawi",
+  "version": "0.1.0",
+  "author": "Pabawi Team",
+  "summary": "Puppet module for installing and configuring Pabawi application",
+  "license": "Apache-2.0",
+  "source": "https://github.com/example42/puppet-pabawi",
+  "project_page": "https://github.com/example42/puppet-pabawi",
+  "issues_url": "https://github.com/example42/puppet-pabawi/issues",
+  "dependencies": [
+    {
+      "name": "puppetlabs/stdlib",
+      "version_requirement": ">= 6.0.0 < 10.0.0"
+    },
+    {
+      "name": "puppet/nginx",
+      "version_requirement": ">= 3.0.0 < 6.0.0"
+    },
+    {
+      "name": "puppetlabs/docker",
+      "version_requirement": ">= 4.0.0 < 10.0.0"
+    },
+    {
+      "name": "puppetlabs/vcsrepo",
+      "version_requirement": ">= 5.0.0 < 7.0.0"
+    },
+    {
+      "name": "puppetlabs/concat",
+      "version_requirement": ">= 6.0.0 < 10.0.0"
+    }
+  ],
+  "operatingsystem_support": [
+    {
+      "operatingsystem": "Ubuntu",
+      "operatingsystemrelease": [
+        "20.04",
+        "22.04"
+      ]
+    },
+    {
+      "operatingsystem": "Debian",
+      "operatingsystemrelease": [
+        "10",
+        "11"
+      ]
+    },
+    {
+      "operatingsystem": "CentOS",
+      "operatingsystemrelease": [
+        "7",
+        "8"
+      ]
+    },
+    {
+      "operatingsystem": "RedHat",
+      "operatingsystemrelease": [
+        "7",
+        "8",
+        "9"
+      ]
+    }
+  ],
+  "requirements": [
+    {
+      "name": "puppet",
+      "version_requirement": ">= 6.0.0 < 9.0.0"
+    }
+  ],
+  "pdk-version": "2.0.0",
+  "template-url": "pdk-default#2.0.0",
+  "template-ref": "tags/2.0.0-0-g5b1cf0f"
+}

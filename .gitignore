@@ -1,0 +1,28 @@
+# Puppet module build artifacts
+pkg/
+Gemfile.lock
+vendor/
+.bundle/
+coverage/
+spec/fixtures/manifests/
+spec/fixtures/modules/
+
+# RSpec
+.rspec_system/
+.vagrant/
+.tmp/
+
+# PDK
+.pdkignore
+.sync.yml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

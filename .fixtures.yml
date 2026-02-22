@@ -1,0 +1,20 @@
+---
+fixtures:
+  repositories:
+    stdlib:
+      repo: 'https://github.com/puppetlabs/puppetlabs-stdlib'
+      ref: 'v6.6.0'
+    concat:
+      repo: 'https://github.com/puppetlabs/puppetlabs-concat'
+      ref: 'v6.4.0'
+    nginx:
+      repo: 'https://github.com/voxpupuli/puppet-nginx'
+      ref: 'v3.3.0'
+    docker:
+      repo: 'https://github.com/puppetlabs/puppetlabs-docker'
+      ref: 'v4.4.0'
+    vcsrepo:
+      repo: 'https://github.com/puppetlabs/puppetlabs-vcsrepo'
+      ref: 'v5.5.0'
+  symlinks:
+    pabawi: "#{source_dir}"

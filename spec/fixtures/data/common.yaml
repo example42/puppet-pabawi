@@ -1,0 +1,42 @@
+---
+# Default configuration for Pabawi module
+# These values can be overridden in environment-specific or node-specific Hiera data
+
+# Proxy management
+pabawi::proxy_manage: true
+pabawi::proxy_class: 'pabawi::proxy::nginx'
+
+# Installation management
+pabawi::install_manage: true
+pabawi::install_class: 'pabawi::install::npm'
+
+# Integration flags
+pabawi::bolt_enable: false
+pabawi::puppetdb_enable: false
+pabawi::integrations: {}
+
+# Bolt integration configuration (required if bolt_enable is true)
+pabawi::integrations::bolt::project_path: '/opt/bolt-project'
+
+# PuppetDB integration configuration (required if puppetdb_enable is true)
+pabawi::integrations::puppetdb::server_url: 'https://puppetdb.example.com:8081'
+
+# Nginx proxy configuration
+pabawi::proxy::nginx::ssl_enable: true
+pabawi::proxy::nginx::ssl_self_signed: true
+pabawi::proxy::nginx::listen_port: 443
+pabawi::proxy::nginx::backend_port: 3000
+
+# NPM installation configuration
+pabawi::install::npm::install_dir: '/opt/pabawi'
+pabawi::install::npm::repo_url: 'https://github.com/example/pabawi.git'
+pabawi::install::npm::version: 'main'
+pabawi::install::npm::user: 'pabawi'
+pabawi::install::npm::group: 'pabawi'
+
+# Docker installation configuration
+pabawi::install::docker::image: 'pabawi/pabawi:latest'
+pabawi::install::docker::container_name: 'pabawi'
+pabawi::install::docker::auto_restart: true
+pabawi::install::docker::ports:
+  '3000': '3000'
