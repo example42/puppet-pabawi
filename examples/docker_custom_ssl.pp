@@ -14,7 +14,7 @@ class { 'pabawi::proxy::nginx':
 }
 
 class { 'pabawi::install::docker':
-  image       => 'pabawi/pabawi:v1.2.3',
+  image       => 'example42/pabawi:v0.8.0',
   environment => {
     'NODE_ENV' => 'production',
     'PORT'     => '3000',

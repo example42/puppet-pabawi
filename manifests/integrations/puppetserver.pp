@@ -1,19 +1,19 @@
-# @summary Configure Pabawi integration with PuppetDB
+# @summary Configure Pabawi integration with Puppet Server
 #
-# This class manages the integration between Pabawi and PuppetDB,
+# This class manages the integration between Pabawi and Puppet Server,
 # including SSL certificate deployment and .env configuration.
 #
 # @param enabled
 #   Whether this integration is enabled (managed by main class)
 #
 # @param server_url
-#   PuppetDB server URL (e.g., https://puppetdb.example.com)
+#   Puppet Server URL (e.g., https://puppet.example.com)
 #
 # @param port
-#   PuppetDB server port
+#   Puppet Server port
 #
 # @param ssl_enabled
-#   Whether to use SSL for PuppetDB connection
+#   Whether to use SSL for Puppet Server connection
 #
 # @param ssl_ca
 #   Path to SSL CA certificate (used in .env file)
@@ -36,36 +36,35 @@
 # @param ssl_reject_unauthorized
 #   Whether to reject unauthorized SSL certificates
 #
+# @param inactivity_threshold
+#   Node inactivity threshold in seconds
+#
+# @param cache_ttl
+#   Cache time-to-live in milliseconds
+#
+# @param circuit_breaker_threshold
+#   Number of failures before circuit breaker opens
+#
+# @param circuit_breaker_timeout
+#   Circuit breaker timeout in milliseconds
+#
+# @param circuit_breaker_reset_timeout
+#   Circuit breaker reset timeout in milliseconds
+#
 # @example Basic usage
 #   class { 'pabawi':
 #     integrations => {
-#       'puppetdb' => {
+#       'puppetserver' => {
 #         'enabled' => true,
-#         'server_url' => 'https://puppetdb.example.com',
+#         'server_url' => 'https://puppet.example.com',
 #       },
 #     },
 #   }
 #
-# @example With SSL certificates from sources
-#   class { 'pabawi':
-#     integrations => {
-#       'puppetdb' => {
-#         'enabled' => true,
-#         'server_url' => 'https://puppetdb.example.com',
-#         'ssl_ca' => '/etc/pabawi/ssl/puppetdb/ca.pem',
-#         'ssl_cert' => '/etc/pabawi/ssl/puppetdb/cert.pem',
-#         'ssl_key' => '/etc/pabawi/ssl/puppetdb/key.pem',
-#         'ssl_ca_source' => 'file:///etc/puppetlabs/puppet/ssl/certs/ca.pem',
-#         'ssl_cert_source' => 'file:///etc/puppetlabs/puppet/ssl/certs/agent.pem',
-#         'ssl_key_source' => 'file:///etc/puppetlabs/puppet/ssl/private_keys/agent.pem',
-#       },
-#     },
-#   }
-#
-class pabawi::integrations::puppetdb (
+class pabawi::integrations::puppetserver (
   Boolean $enabled = false,
   Optional[String[1]] $server_url = undef,
-  Integer $port = 8081,
+  Integer $port = 8140,
   Boolean $ssl_enabled = true,
   Optional[String[1]] $ssl_ca = undef,
   Optional[String[1]] $ssl_cert = undef,
@@ -74,13 +73,18 @@ class pabawi::integrations::puppetdb (
   Optional[String[1]] $ssl_cert_source = undef,
   Optional[String[1]] $ssl_key_source = undef,
   Boolean $ssl_reject_unauthorized = true,
+  Integer $inactivity_threshold = 3600,
+  Integer $cache_ttl = 300000,
+  Integer $circuit_breaker_threshold = 5,
+  Integer $circuit_breaker_timeout = 60000,
+  Integer $circuit_breaker_reset_timeout = 30000,
 ) {
   # Validate required parameters
   unless $server_url {
-    fail('pabawi::integrations::puppetdb requires server_url parameter')
+    fail('pabawi::integrations::puppetserver requires server_url parameter')
   }
 
-  # Create SSL directory for PuppetDB certificates
+  # Create SSL directory for Puppet Server certificates
   ensure_resource('file', '/etc/pabawi/ssl', {
     'ensure' => 'directory',
     'mode'   => '0755',
@@ -88,7 +92,7 @@ class pabawi::integrations::puppetdb (
     'group'  => 'root',
   })
 
-  file { '/etc/pabawi/ssl/puppetdb':
+  file { '/etc/pabawi/ssl/puppetserver':
     ensure => directory,
     mode   => '0755',
     owner  => 'root',
@@ -108,7 +112,7 @@ class pabawi::integrations::puppetdb (
     $target_path = $item[1]['path']
 
     if $source {
-      $dest_path = "/etc/pabawi/ssl/puppetdb/${name}.pem"
+      $dest_path = "/etc/pabawi/ssl/puppetserver/${name}.pem"
       $mode = $name ? {
         'key'   => '0600',
         default => '0644',
@@ -127,7 +131,7 @@ class pabawi::integrations::puppetdb (
       }
       # Handle https:// URLs
       elsif $source =~ /^https:\/\/.+$/ {
-        exec { "download_puppetdb_${name}":
+        exec { "download_puppetserver_${name}":
           command => "curl -sL -o ${dest_path} ${source}",
           path    => ['/usr/bin', '/bin'],
           creates => $dest_path,
@@ -160,19 +164,24 @@ class pabawi::integrations::puppetdb (
   }
 
   # Add configuration to .env file via concat fragment
-  concat::fragment { 'pabawi_env_puppetdb':
+  concat::fragment { 'pabawi_env_puppetserver':
     target  => 'pabawi_env_file',
     content => @("EOT"),
-      # PuppetDB Integration
-      PUPPETDB_ENABLED=${enabled}
-      PUPPETDB_SERVER_URL=${server_url}
-      PUPPETDB_PORT=${port}
-      PUPPETDB_SSL_ENABLED=${ssl_enabled}
-      PUPPETDB_SSL_CA=${ssl_paths['ca']}
-      PUPPETDB_SSL_CERT=${ssl_paths['cert']}
-      PUPPETDB_SSL_KEY=${ssl_paths['key']}
-      PUPPETDB_SSL_REJECT_UNAUTHORIZED=${ssl_reject_unauthorized}
+      # Puppet Server Integration
+      PUPPETSERVER_ENABLED=${enabled}
+      PUPPETSERVER_SERVER_URL=${server_url}
+      PUPPETSERVER_PORT=${port}
+      PUPPETSERVER_SSL_ENABLED=${ssl_enabled}
+      PUPPETSERVER_SSL_CA=${ssl_paths['ca']}
+      PUPPETSERVER_SSL_CERT=${ssl_paths['cert']}
+      PUPPETSERVER_SSL_KEY=${ssl_paths['key']}
+      PUPPETSERVER_SSL_REJECT_UNAUTHORIZED=${ssl_reject_unauthorized}
+      PUPPETSERVER_INACTIVITY_THRESHOLD=${inactivity_threshold}
+      PUPPETSERVER_CACHE_TTL=${cache_ttl}
+      PUPPETSERVER_CIRCUIT_BREAKER_THRESHOLD=${circuit_breaker_threshold}
+      PUPPETSERVER_CIRCUIT_BREAKER_TIMEOUT=${circuit_breaker_timeout}
+      PUPPETSERVER_CIRCUIT_BREAKER_RESET_TIMEOUT=${circuit_breaker_reset_timeout}
       | EOT
-    order   => '21',
+    order   => '22',
   }
 }

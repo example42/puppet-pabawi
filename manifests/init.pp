@@ -20,16 +20,20 @@
 #   The class to use for application installation. Must be a valid Puppet class name.
 #   Default: 'pabawi::install::npm'
 #
-# @param bolt_enable
-#   Whether to enable Puppet Bolt integration.
-#
-# @param puppetdb_enable
-#   Whether to enable PuppetDB integration.
-#
 # @param integrations
-#   Hash of additional integrations to enable. Keys are integration names,
-#   values are boolean flags indicating whether the integration is enabled.
-#   Example: { 'terraform' => true, 'ansible' => false }
+#   Hash of integrations to configure. Keys are integration names,
+#   values are hashes containing 'enabled' boolean plus integration-specific configuration.
+#   Example: {
+#     'bolt' => {
+#       'enabled' => true,
+#       'project_path' => '/opt/bolt-project',
+#       'command_whitelist' => ['ls', 'pwd'],
+#     },
+#     'puppetdb' => {
+#       'enabled' => true,
+#       'server_url' => 'https://puppetdb.example.com:8081',
+#     },
+#   }
 #
 # @example Basic usage with defaults
 #   include pabawi
@@ -46,11 +50,15 @@
 #
 # @example Enable integrations
 #   class { 'pabawi':
-#     bolt_enable      => true,
-#     puppetdb_enable  => true,
-#     integrations     => {
-#       'terraform' => true,
-#       'ansible'   => true,
+#     integrations => {
+#       'bolt' => {
+#         'enabled' => true,
+#         'project_path' => '/opt/bolt-project',
+#       },
+#       'puppetdb' => {
+#         'enabled' => true,
+#         'server_url' => 'https://puppetdb.example.com:8081',
+#       },
 #     },
 #   }
 #
@@ -59,9 +67,7 @@ class pabawi (
   String[1] $proxy_class = 'pabawi::proxy::nginx',
   Boolean $install_manage = true,
   String[1] $install_class = 'pabawi::install::npm',
-  Boolean $bolt_enable = false,
-  Boolean $puppetdb_enable = false,
-  Hash[String[1], Boolean] $integrations = {},
+  Hash[String[1], Hash] $integrations = {},
 ) {
   # Validate proxy_class is a valid class name format
   if $proxy_manage {
@@ -77,10 +83,10 @@ class pabawi (
     }
   }
 
-  # Validate integrations hash contains only boolean values
-  $integrations.each |String $name, $enabled| {
-    unless $enabled =~ Boolean {
-      fail("Integration '${name}' must have a boolean value, got: ${enabled}")
+  # Validate integrations hash structure
+  $integrations.each |String $name, Hash $config| {
+    unless $config['enabled'] =~ Boolean {
+      fail("Integration '${name}' must have an 'enabled' boolean key")
     }
   }
 
@@ -98,31 +104,23 @@ class pabawi (
     include $install_class
   }
 
-  # Process built-in integrations
-  if $bolt_enable {
-    include pabawi::integrations::bolt
-  }
-
-  if $puppetdb_enable {
-    include pabawi::integrations::puppetdb
-  }
-
-  # Process custom integrations from hash
-  $integrations.each |String $name, Boolean $enabled| {
-    if $enabled {
+  # Process integrations from hash
+  $integrations.each |String $name, Hash $config| {
+    if $config['enabled'] {
       $integration_class = "pabawi::integrations::${name}"
 
       # Log that we're attempting to enable this integration
-      # If the class doesn't exist, Puppet will fail with a descriptive error
-      # This is intentional - missing integration classes should be caught early
       notify { "pabawi_integration_${name}":
         message  => "Enabling integration: ${integration_class}",
         loglevel => 'notice',
       }
 
-      # Include the integration class
-      # Puppet will fail compilation if the class doesn't exist
-      include $integration_class
+      # Include the integration class with its configuration
+      # Remove the 'enabled' key and pass remaining config as parameters
+      $integration_params = $config.filter |$key, $value| { $key != 'enabled' }
+      class { $integration_class:
+        * => $integration_params,
+      }
     }
   }
 }
