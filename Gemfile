@@ -7,7 +7,7 @@ gem 'facter', '>= 2.4.0'
 
 group :test do
   gem 'puppetlabs_spec_helper', '~> 8.0'
-  gem 'rspec-puppet', '~> 2.0'
+  gem 'rspec-puppet', '~> 5.0'
   gem 'rspec-puppet-facts', '~> 2.0'
   gem 'puppet-lint', '~> 3.0'
   gem 'metadata-json-lint', '~> 3.0'
