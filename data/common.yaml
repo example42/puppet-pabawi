@@ -10,16 +10,70 @@ pabawi::proxy_class: 'pabawi::proxy::nginx'
 pabawi::install_manage: true
 pabawi::install_class: 'pabawi::install::npm'
 
-# Integration flags
-pabawi::bolt_enable: false
-pabawi::puppetdb_enable: false
-pabawi::integrations: {}
+# Integration configuration
+# Simple array of enabled integrations - configuration via class parameters below
+pabawi::integrations: []
+# Example: ['bolt', 'puppetdb']
 
-# Bolt integration configuration (required if bolt_enable is true)
+# Integration Control:
+# 1. Array inclusion: Integration class is included (resources created, .env fragment added)
+# 2. enabled parameter: Controls whether integration is active (sets *_ENABLED in .env)
+#
+# This allows pre-configuration without enabling, and easy toggling via enabled parameter
+
+# Bolt integration configuration
+# pabawi::integrations::bolt::enabled: true  # Set to false to disable but keep configured
 pabawi::integrations::bolt::project_path: '/opt/bolt-project'
+# pabawi::integrations::bolt::project_path_source: 'https://github.com/example/bolt-project.git'
+# pabawi::integrations::bolt::manage_package: false
+# pabawi::integrations::bolt::command_whitelist: ['plan run', 'task run']
+# pabawi::integrations::bolt::command_whitelist_allow_all: false
+# pabawi::integrations::bolt::execution_timeout: 300000
 
-# PuppetDB integration configuration (required if puppetdb_enable is true)
+# PuppetDB integration configuration
+# pabawi::integrations::puppetdb::enabled: true  # Set to false to disable but keep configured
 pabawi::integrations::puppetdb::server_url: 'https://puppetdb.example.com:8081'
+# pabawi::integrations::puppetdb::port: 8081
+# pabawi::integrations::puppetdb::ssl_enabled: true
+# pabawi::integrations::puppetdb::ssl_cert: '/etc/puppetlabs/puppet/ssl/certs/agent.pem'
+# pabawi::integrations::puppetdb::ssl_key: '/etc/puppetlabs/puppet/ssl/private_keys/agent.pem'
+# pabawi::integrations::puppetdb::ssl_ca: '/etc/puppetlabs/puppet/ssl/certs/ca.pem'
+# pabawi::integrations::puppetdb::ssl_reject_unauthorized: true
+
+# Puppet Server integration configuration
+# pabawi::integrations::puppetserver::enabled: true  # Set to false to disable but keep configured
+pabawi::integrations::puppetserver::server_url: 'https://puppet.example.com:8140'
+# pabawi::integrations::puppetserver::port: 8140
+# pabawi::integrations::puppetserver::ssl_enabled: true
+# pabawi::integrations::puppetserver::ssl_cert: '/etc/puppetlabs/puppet/ssl/certs/agent.pem'
+# pabawi::integrations::puppetserver::ssl_key: '/etc/puppetlabs/puppet/ssl/private_keys/agent.pem'
+# pabawi::integrations::puppetserver::ssl_ca: '/etc/puppetlabs/puppet/ssl/certs/ca.pem'
+# pabawi::integrations::puppetserver::ssl_reject_unauthorized: true
+# pabawi::integrations::puppetserver::inactivity_threshold: 3600
+# pabawi::integrations::puppetserver::cache_ttl: 300000
+# pabawi::integrations::puppetserver::circuit_breaker_threshold: 5
+# pabawi::integrations::puppetserver::circuit_breaker_timeout: 60000
+# pabawi::integrations::puppetserver::circuit_breaker_reset_timeout: 30000
+
+# Hiera integration configuration
+# pabawi::integrations::hiera::enabled: true  # Set to false to disable but keep configured
+pabawi::integrations::hiera::control_repo_path: '/opt/control-repo'
+# pabawi::integrations::hiera::control_repo_source: 'https://github.com/example/control-repo.git'
+# pabawi::integrations::hiera::manage_package: false
+# pabawi::integrations::hiera::config_path: 'hiera_pabawi.yaml'
+# pabawi::integrations::hiera::environments: ['production']
+# pabawi::integrations::hiera::fact_source_prefer_puppetdb: true
+# pabawi::integrations::hiera::fact_source_local_path: '/var/lib/puppet/facts'
+
+# Ansible integration configuration
+# pabawi::integrations::ansible::enabled: true  # Set to false to disable but keep configured
+pabawi::integrations::ansible::inventory_path: '/etc/ansible/inventory'
+# pabawi::integrations::ansible::inventory_source: 'https://github.com/example/ansible-inventory.git'
+# pabawi::integrations::ansible::playbook_path: '/etc/ansible/playbooks'
+# pabawi::integrations::ansible::playbook_source: 'https://github.com/example/ansible-playbooks.git'
+# pabawi::integrations::ansible::manage_package: false
+# pabawi::integrations::ansible::execution_timeout: 300000
+# pabawi::integrations::ansible::config: '/etc/ansible/ansible.cfg'
 
 # Nginx proxy configuration
 pabawi::proxy::nginx::ssl_enable: true
@@ -29,14 +83,25 @@ pabawi::proxy::nginx::backend_port: 3000
 
 # NPM installation configuration
 pabawi::install::npm::install_dir: '/opt/pabawi'
-pabawi::install::npm::repo_url: 'https://github.com/example/pabawi.git'
+pabawi::install::npm::repo_url: 'https://github.com/example42/pabawi.git'
 pabawi::install::npm::version: 'main'
 pabawi::install::npm::user: 'pabawi'
 pabawi::install::npm::group: 'pabawi'
+pabawi::install::npm::log_level: 'info'
+pabawi::install::npm::auth_enabled: false
+# pabawi::install::npm::jwt_secret: 'your-secret-key-here'
+pabawi::install::npm::database_path: '/var/lib/pabawi/pabawi.db'
+pabawi::install::npm::concurrent_execution_limit: 5
 
 # Docker installation configuration
-pabawi::install::docker::image: 'pabawi/pabawi:latest'
+pabawi::install::docker::image: 'example42/pabawi:latest'
 pabawi::install::docker::container_name: 'pabawi'
 pabawi::install::docker::auto_restart: true
+pabawi::install::docker::install_dir: '/opt/pabawi'
+pabawi::install::docker::log_level: 'info'
+pabawi::install::docker::auth_enabled: false
+# pabawi::install::docker::jwt_secret: 'your-secret-key-here'
+pabawi::install::docker::database_path: '/var/lib/pabawi/pabawi.db'
+pabawi::install::docker::concurrent_execution_limit: 5
 pabawi::install::docker::ports:
   '3000': '3000'

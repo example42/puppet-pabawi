@@ -2,7 +2,7 @@
 
 source 'https://rubygems.org'
 
-gem 'puppet', ENV['PUPPET_GEM_VERSION'] || '~> 6.0'
+gem 'puppet', ENV['PUPPET_GEM_VERSION'] || '~> 7.0'
 gem 'facter', '>= 2.4.0'
 
 group :test do

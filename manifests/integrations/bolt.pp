@@ -1,81 +1,100 @@
 # @summary Configure Pabawi integration with Puppet Bolt
 #
 # This class manages the integration between Pabawi and Puppet Bolt,
-# including configuration file creation and validation.
+# writing configuration to the .env file and optionally managing the Bolt package
+# and project repository.
+#
+# @param enabled
+#   Whether the integration is enabled (sets BOLT_ENABLED in .env)
+#
+# @param manage_package
+#   Whether to install the bolt package
 #
 # @param project_path
-#   Path to the Bolt project directory
+#   Local path for bolt project directory
 #
-# @param bolt_config_path
-#   Optional path to Bolt configuration file
+# @param project_path_source
+#   Git URL to clone bolt project from (optional)
 #
-# @param bolt_settings
-#   Additional Bolt integration settings
+# @param command_whitelist
+#   Array of allowed commands for bolt execution
 #
-# @example Basic usage
-#   class { 'pabawi::integrations::bolt':
-#     project_path => '/opt/bolt-project',
+# @param command_whitelist_allow_all
+#   Whether to allow all commands (bypasses whitelist)
+#
+# @param execution_timeout
+#   Timeout for bolt command execution in milliseconds
+#
+# @example Basic usage via main class
+#   class { 'pabawi':
+#     integrations => ['bolt'],
 #   }
 #
-# @example With custom settings
-#   class { 'pabawi::integrations::bolt':
-#     project_path => '/opt/bolt-project',
-#     bolt_settings => {
-#       'timeout' => 300,
-#       'concurrency' => 10,
-#     },
+#   # Configure via Hiera
+#   pabawi::integrations::bolt::project_path: '/opt/bolt-project'
+#
+# @example With git repository
+#   class { 'pabawi':
+#     integrations => ['bolt'],
 #   }
+#
+#   # Configure via Hiera
+#   pabawi::integrations::bolt::project_path: '/opt/bolt-project'
+#   pabawi::integrations::bolt::project_path_source: 'https://github.com/example/bolt-project.git'
+#   pabawi::integrations::bolt::command_whitelist:
+#     - 'plan run'
+#     - 'task run'
 #
 class pabawi::integrations::bolt (
+  Boolean $enabled = true,
+  Boolean $manage_package = false,
   Optional[Stdlib::Absolutepath] $project_path = undef,
-  Optional[Stdlib::Absolutepath] $bolt_config_path = undef,
-  Hash $bolt_settings = {},
+  Optional[String[1]] $project_path_source = undef,
+  Array[String[1]] $command_whitelist = [],
+  Boolean $command_whitelist_allow_all = false,
+  Integer $execution_timeout = 300000,
 ) {
-  # Validate that project_path is provided
+  # Validate required parameters
   unless $project_path {
     fail('pabawi::integrations::bolt requires project_path parameter')
   }
 
-  # Validate that Bolt project path exists
-  unless $facts['os']['family'] == 'windows' {
-    exec { 'validate_bolt_project_path':
-      command => "test -d ${project_path}",
-      path    => ['/usr/bin', '/bin'],
-      unless  => "test -d ${project_path}",
-      onlyif  => 'true',
+  # Manage bolt package if requested
+  if $manage_package {
+    package { 'puppet-bolt':
+      ensure => installed,
     }
   }
 
-  # Create Pabawi integration configuration directory
-  ensure_resource('file', '/etc/pabawi', {
-    'ensure' => 'directory',
-    'mode'   => '0755',
-    'owner'  => 'root',
-    'group'  => 'root',
-  })
+  # Clone git repository if source is provided
+  if $project_path_source {
+    # Ensure parent directory exists
+    $parent_dir = dirname($project_path)
+    exec { "create_bolt_parent_dir_${project_path}":
+      command => "mkdir -p ${parent_dir}",
+      path    => ['/usr/bin', '/bin'],
+      creates => $parent_dir,
+    }
 
-  # Create Bolt integration configuration
-  $config_content = {
-    'bolt' => {
-      'enabled'      => true,
-      'project_path' => $project_path,
-      'config_path'  => $bolt_config_path,
-      'settings'     => $bolt_settings,
-    },
+    vcsrepo { $project_path:
+      ensure   => present,
+      provider => git,
+      source   => $project_path_source,
+      require  => Exec["create_bolt_parent_dir_${project_path}"],
+    }
   }
 
-  file { '/etc/pabawi/bolt-integration.yaml':
-    ensure  => file,
-    mode    => '0644',
-    owner   => 'root',
-    group   => 'root',
-    content => to_yaml($config_content),
-    require => File['/etc/pabawi'],
-  }
-
-  # Log integration status
-  notify { 'pabawi_bolt_integration_enabled':
-    message  => "Pabawi Bolt integration enabled for project: ${project_path}",
-    loglevel => 'notice',
+  # Add configuration to .env file via concat fragment
+  concat::fragment { 'pabawi_env_bolt':
+    target  => 'pabawi_env_file',
+    content => @("EOT"),
+      # Bolt Integration
+      BOLT_ENABLED=${enabled}
+      BOLT_PROJECT_PATH=${project_path}
+      BOLT_COMMAND_WHITELIST=${to_json($command_whitelist)}
+      BOLT_COMMAND_WHITELIST_ALLOW_ALL=${command_whitelist_allow_all}
+      BOLT_EXECUTION_TIMEOUT=${execution_timeout}
+      | EOT
+    order   => '20',
   }
 }

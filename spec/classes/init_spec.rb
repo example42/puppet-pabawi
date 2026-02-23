@@ -75,55 +75,52 @@ describe 'pabawi' do
         end
       end
 
-      context 'with bolt_enable set to true' do
+      context 'with bolt in integrations' do
         let(:params) do
           {
-            bolt_enable: true,
+            integrations: ['bolt'],
           }
         end
 
         it { is_expected.to compile.with_all_deps }
-        
+
         it 'includes bolt integration class' do
           is_expected.to contain_class('pabawi::integrations::bolt')
         end
       end
 
-      context 'with puppetdb_enable set to true' do
+      context 'with puppetdb in integrations' do
         let(:params) do
           {
-            puppetdb_enable: true,
+            integrations: ['puppetdb'],
           }
         end
 
         it { is_expected.to compile.with_all_deps }
-        
+
         it 'includes puppetdb integration class' do
           is_expected.to contain_class('pabawi::integrations::puppetdb')
         end
       end
 
-      context 'with custom integrations hash' do
+      context 'with custom integrations array' do
         let(:params) do
           {
-            integrations: {
-              'terraform' => true,
-              'ansible' => false,
-            },
+            integrations: ['terraform'],
           }
         end
 
         it { is_expected.to compile.with_all_deps }
-        
-        it 'includes enabled integration classes' do
+
+        it 'includes listed integration classes' do
           is_expected.to contain_class('pabawi::integrations::terraform')
         end
-        
-        it 'does not include disabled integration classes' do
+
+        it 'does not include unlisted integration classes' do
           is_expected.not_to contain_class('pabawi::integrations::ansible')
         end
-        
-        it 'creates notify resource for enabled integrations' do
+
+        it 'creates notify resource for each integration' do
           is_expected.to contain_notify('pabawi_integration_terraform').with(
             'message' => 'Enabling integration: pabawi::integrations::terraform',
             'loglevel' => 'notice',
@@ -131,37 +128,31 @@ describe 'pabawi' do
         end
       end
 
-      context 'with all integrations enabled' do
+      context 'with multiple integrations' do
         let(:params) do
           {
-            bolt_enable: true,
-            puppetdb_enable: true,
-            integrations: {
-              'custom' => true,
-            },
+            integrations: ['bolt', 'puppetdb', 'custom'],
           }
         end
 
         it { is_expected.to compile.with_all_deps }
-        
-        it 'includes all integration classes' do
+
+        it 'includes all listed integration classes' do
           is_expected.to contain_class('pabawi::integrations::bolt')
           is_expected.to contain_class('pabawi::integrations::puppetdb')
           is_expected.to contain_class('pabawi::integrations::custom')
         end
       end
 
-      context 'with invalid integration value' do
+      context 'with invalid integration type' do
         let(:params) do
           {
-            integrations: {
-              'test' => 'invalid',
-            },
+            integrations: [123],
           }
         end
 
         it 'fails with validation error' do
-          is_expected.to compile.and_raise_error(/expects a Boolean value/)
+          is_expected.to compile.and_raise_error(/expects an Array\[String/)
         end
       end
     end
