@@ -50,12 +50,12 @@
 class pabawi::integrations::ansible (
   Boolean $enabled = true,
   Boolean $manage_package = false,
-  Optional[String] $inventory_path = undef,
+  Optional[Stdlib::Absolutepath] $inventory_path = undef,
   Optional[String[1]] $inventory_source = undef,
-  Optional[String] $playbook_path = undef,
+  Optional[Stdlib::Absolutepath] $playbook_path = undef,
   Optional[String[1]] $playbook_source = undef,
   Integer $execution_timeout = 300000,
-  Optional[String] $config = undef,
+  Optional[Stdlib::Absolutepath] $config = undef,
 ) {
   # Validate required parameters when integration is enabled
   if $enabled {

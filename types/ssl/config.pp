@@ -5,6 +5,6 @@ type Pabawi::SSL::Config = Struct[{
   self_signed      => Boolean,
   cert_source      => Optional[String[1]],
   key_source       => Optional[String[1]],
-  cert_path        => String,
-  key_path         => String,
+  cert_path        => Stdlib::Absolutepath,
+  key_path         => Stdlib::Absolutepath,
 }]

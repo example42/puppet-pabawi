@@ -48,7 +48,7 @@
 class pabawi::integrations::bolt (
   Boolean $enabled = true,
   Boolean $manage_package = false,
-  Optional[String] $project_path = undef,
+  Optional[Stdlib::Absolutepath] $project_path = undef,
   Optional[String[1]] $project_path_source = undef,
   Array[String[1]] $command_whitelist = [],
   Boolean $command_whitelist_allow_all = false,

@@ -50,12 +50,12 @@
 class pabawi::integrations::hiera (
   Boolean $enabled = true,
   Boolean $manage_package = false,
-  Optional[String] $control_repo_path = undef,
+  Optional[Stdlib::Absolutepath] $control_repo_path = undef,
   Optional[String[1]] $control_repo_source = undef,
   String[1] $config_path = 'hiera_pabawi.yaml',
   Array[String[1]] $environments = ['production'],
   Boolean $fact_source_prefer_puppetdb = true,
-  Optional[String] $fact_source_local_path = undef,
+  Optional[Stdlib::Absolutepath] $fact_source_local_path = undef,
 ) {
   # Validate required parameters
   unless $control_repo_path {
