@@ -54,7 +54,7 @@
 class pabawi::install::npm (
   Boolean $manage_nodejs = true,
   Boolean $manage_git = true,
-  Stdlib::Absolutepath $install_dir = '/opt/pabawi',
+  Stdlib::Absolutepath $install_dir = '/opt/pabawi/app',
   String[1] $repo_url = 'https://github.com/example42/pabawi.git',
   String[1] $version = 'main',
   String[1] $user = 'pabawi',
@@ -63,7 +63,7 @@ class pabawi::install::npm (
   String[1] $log_level = 'info',
   Boolean $auth_enabled = false,
   Optional[String[1]] $jwt_secret = undef,
-  Stdlib::Absolutepath $database_path = '/var/lib/pabawi/pabawi.db',
+  Stdlib::Absolutepath $database_path = '/opt/pabawi/data/pabawi.db',
   Integer $concurrent_execution_limit = 5,
 ) {
   # Validate auth configuration
@@ -90,31 +90,14 @@ class pabawi::install::npm (
 
   # Ensure parent directory exists
   $parent_dir = dirname($install_dir)
-  exec { "create_parent_dir_${install_dir}":
-    command => "mkdir -p ${parent_dir}",
-    path    => ['/usr/bin', '/bin'],
-    creates => $parent_dir,
-  }
-
-  # Create installation directory
-  file { $install_dir:
+  file { $parent_dir:
     ensure  => directory,
     owner   => $user,
     group   => $group,
     mode    => '0755',
     require => [
       User[$user],
-      Exec["create_parent_dir_${install_dir}"],
     ],
-  }
-
-  # Create backend directory for .env file
-  file { "${install_dir}/backend":
-    ensure  => directory,
-    owner   => $user,
-    group   => $group,
-    mode    => '0755',
-    require => File[$install_dir],
   }
 
   # Create database directory
@@ -138,7 +121,6 @@ class pabawi::install::npm (
     owner   => $user,
     group   => $group,
     mode    => '0600',
-    require => File["${install_dir}/backend"],
   }
 
   # Base configuration fragment
@@ -181,7 +163,7 @@ class pabawi::install::npm (
         true    => Package['git'],
         default => undef,
       },
-      File[$install_dir],
+      File[$parent_dir],
       User[$user],
     ].filter |$item| { $item =~ NotUndef },
   }

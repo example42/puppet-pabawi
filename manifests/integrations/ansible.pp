@@ -50,9 +50,9 @@
 class pabawi::integrations::ansible (
   Boolean $enabled = true,
   Boolean $manage_package = false,
-  Optional[Stdlib::Absolutepath] $inventory_path = undef,
+  Optional[Stdlib::Absolutepath] $inventory_path = '/opt/pabawi/ansible',
   Optional[String[1]] $inventory_source = undef,
-  Optional[Stdlib::Absolutepath] $playbook_path = undef,
+  Optional[Stdlib::Absolutepath] $playbook_path = '/opt/pabawi/ansible',
   Optional[String[1]] $playbook_source = undef,
   Integer $execution_timeout = 300000,
   Optional[Stdlib::Absolutepath] $config = undef,

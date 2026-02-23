@@ -53,7 +53,7 @@ class pabawi::proxy::nginx (
   Stdlib::Absolutepath $ssl_key_path = '/etc/nginx/ssl/pabawi.key',
   Integer[1, 65535] $listen_port = 443,
   Integer[1, 65535] $backend_port = 3000,
-  String[1] $server_name = $facts['fqdn'],
+  String[1] $server_name = $facts['networking']['fqdn'],
 ) {
   # Validate SSL configuration
   if $ssl_enable and !$ssl_self_signed {

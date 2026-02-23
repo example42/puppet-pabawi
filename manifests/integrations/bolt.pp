@@ -48,7 +48,7 @@
 class pabawi::integrations::bolt (
   Boolean $enabled = true,
   Boolean $manage_package = false,
-  Optional[Stdlib::Absolutepath] $project_path = undef,
+  Stdlib::Absolutepath $project_path = '/opt/pabawi/control-repo',
   Optional[String[1]] $project_path_source = undef,
   Array[String[1]] $command_whitelist = [],
   Boolean $command_whitelist_allow_all = false,
@@ -91,7 +91,7 @@ class pabawi::integrations::bolt (
       # Bolt Integration
       BOLT_ENABLED=${enabled}
       BOLT_PROJECT_PATH=${project_path}
-      BOLT_COMMAND_WHITELIST=${to_json($command_whitelist)}
+      BOLT_COMMAND_WHITELIST=${stdlib::to_json($command_whitelist)}
       BOLT_COMMAND_WHITELIST_ALLOW_ALL=${command_whitelist_allow_all}
       BOLT_EXECUTION_TIMEOUT=${execution_timeout}
       | EOT
