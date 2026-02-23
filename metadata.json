@@ -29,16 +29,13 @@
     {
       "operatingsystem": "Ubuntu",
       "operatingsystemrelease": [
-        "22.04",
         "24.04"
       ]
     },
     {
       "operatingsystem": "Debian",
       "operatingsystemrelease": [
-        "10",
-        "11",
-        "12"
+        "13"
       ]
     },
     {
@@ -51,7 +48,6 @@
     {
       "operatingsystem": "RedHat",
       "operatingsystemrelease": [
-        "7",
         "8",
         "9",
         "10"
