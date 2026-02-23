@@ -60,7 +60,7 @@
 #
 class pabawi::integrations::puppetdb (
   Boolean $enabled = true,
-  Optional[String[1]] $server_url = undef,
+  Optional[Stdlib::HTTPUrl] $server_url = undef,
   Integer $port = 8081,
   Boolean $ssl_enabled = true,
   Optional[String[1]] $ssl_ca = undef,
