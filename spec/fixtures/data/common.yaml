@@ -11,9 +11,7 @@ pabawi::install_manage: true
 pabawi::install_class: 'pabawi::install::npm'
 
 # Integration flags
-pabawi::bolt_enable: false
-pabawi::puppetdb_enable: false
-pabawi::integrations: {}
+pabawi::integrations: []
 
 # Bolt integration configuration (required if bolt_enable is true)
 pabawi::integrations::bolt::project_path: '/opt/bolt-project'
