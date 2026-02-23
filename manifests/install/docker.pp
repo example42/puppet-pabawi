@@ -60,11 +60,11 @@ class pabawi::install::docker (
   Array[String[1]] $volumes = [],
   Hash[String[1], String[1]] $ports = { '3000' => '3000' },
   Boolean $auto_restart = true,
-  Stdlib::Absolutepath $install_dir = '/opt/pabawi',
+  String $install_dir = '/opt/pabawi',
   String[1] $log_level = 'info',
   Boolean $auth_enabled = false,
   Optional[String[1]] $jwt_secret = undef,
-  Stdlib::Absolutepath $database_path = '/var/lib/pabawi/pabawi.db',
+  String $database_path = '/var/lib/pabawi/pabawi.db',
   Integer $concurrent_execution_limit = 5,
 ) {
   # Validate auth configuration

@@ -2,6 +2,6 @@
 # Defines the structure for integration configuration
 type Pabawi::Integration::Config = Struct[{
   enabled          => Boolean,
-  config_path      => Optional[Stdlib::Absolutepath],
+  config_path      => Optional[String],
   settings         => Hash[String, Data],
 }]

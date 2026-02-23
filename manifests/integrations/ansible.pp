@@ -50,12 +50,12 @@
 class pabawi::integrations::ansible (
   Boolean $enabled = true,
   Boolean $manage_package = false,
-  Optional[Stdlib::Absolutepath] $inventory_path = undef,
+  Optional[String] $inventory_path = undef,
   Optional[String[1]] $inventory_source = undef,
-  Optional[Stdlib::Absolutepath] $playbook_path = undef,
+  Optional[String] $playbook_path = undef,
   Optional[String[1]] $playbook_source = undef,
   Integer $execution_timeout = 300000,
-  Optional[Stdlib::Absolutepath] $config = undef,
+  Optional[String] $config = undef,
 ) {
   # Validate required parameters
   unless $inventory_path {
@@ -112,9 +112,9 @@ class pabawi::integrations::ansible (
       # Ansible Integration
       ANSIBLE_ENABLED=${enabled}
       ANSIBLE_INVENTORY_PATH=${inventory_path}
-      ANSIBLE_PLAYBOOK_PATH=${pick($playbook_path, '')}
+      ANSIBLE_PLAYBOOK_PATH=${pick($playbook_path, 'not-set')}
       ANSIBLE_EXECUTION_TIMEOUT=${execution_timeout}
-      ANSIBLE_CONFIG=${pick($config, '')}
+      ANSIBLE_CONFIG=${pick($config, 'not-set')}
       | EOT
     order   => '24',
   }

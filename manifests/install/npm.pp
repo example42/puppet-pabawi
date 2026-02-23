@@ -54,7 +54,7 @@
 class pabawi::install::npm (
   Boolean $manage_nodejs = true,
   Boolean $manage_git = true,
-  Stdlib::Absolutepath $install_dir = '/opt/pabawi',
+  String $install_dir = '/opt/pabawi',
   String[1] $repo_url = 'https://github.com/example42/pabawi.git',
   String[1] $version = 'main',
   String[1] $user = 'pabawi',
@@ -63,7 +63,7 @@ class pabawi::install::npm (
   String[1] $log_level = 'info',
   Boolean $auth_enabled = false,
   Optional[String[1]] $jwt_secret = undef,
-  Stdlib::Absolutepath $database_path = '/var/lib/pabawi/pabawi.db',
+  String $database_path = '/var/lib/pabawi/pabawi.db',
   Integer $concurrent_execution_limit = 5,
 ) {
   # Validate auth configuration
@@ -148,7 +148,7 @@ class pabawi::install::npm (
       # Pabawi Base Configuration
       LOG_LEVEL=${log_level}
       AUTH_ENABLED=${auth_enabled}
-      JWT_SECRET=${pick($jwt_secret, '')}
+      JWT_SECRET=${pick($jwt_secret, 'not-set')}
       DATABASE_PATH=${database_path}
       CONCURRENT_EXECUTION_LIMIT=${concurrent_execution_limit}
       | EOT
