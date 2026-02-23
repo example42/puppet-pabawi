@@ -35,9 +35,9 @@ pabawi::integrations::bolt::project_path: '/opt/bolt-project'
 pabawi::integrations::puppetdb::server_url: 'https://puppetdb.example.com:8081'
 # pabawi::integrations::puppetdb::port: 8081
 # pabawi::integrations::puppetdb::ssl_enabled: true
-# pabawi::integrations::puppetdb::ssl_cert: 'file:///etc/puppetlabs/puppet/ssl/certs/agent.pem'
-# pabawi::integrations::puppetdb::ssl_key: 'file:///etc/puppetlabs/puppet/ssl/private_keys/agent.pem'
-# pabawi::integrations::puppetdb::ssl_ca: 'file:///etc/puppetlabs/puppet/ssl/certs/ca.pem'
+# pabawi::integrations::puppetdb::ssl_cert: '/etc/puppetlabs/puppet/ssl/certs/agent.pem'
+# pabawi::integrations::puppetdb::ssl_key: '/etc/puppetlabs/puppet/ssl/private_keys/agent.pem'
+# pabawi::integrations::puppetdb::ssl_ca: '/etc/puppetlabs/puppet/ssl/certs/ca.pem'
 # pabawi::integrations::puppetdb::ssl_reject_unauthorized: true
 
 # Puppet Server integration configuration
@@ -45,9 +45,9 @@ pabawi::integrations::puppetdb::server_url: 'https://puppetdb.example.com:8081'
 pabawi::integrations::puppetserver::server_url: 'https://puppet.example.com:8140'
 # pabawi::integrations::puppetserver::port: 8140
 # pabawi::integrations::puppetserver::ssl_enabled: true
-# pabawi::integrations::puppetserver::ssl_cert: 'file:///etc/puppetlabs/puppet/ssl/certs/agent.pem'
-# pabawi::integrations::puppetserver::ssl_key: 'file:///etc/puppetlabs/puppet/ssl/private_keys/agent.pem'
-# pabawi::integrations::puppetserver::ssl_ca: 'file:///etc/puppetlabs/puppet/ssl/certs/ca.pem'
+# pabawi::integrations::puppetserver::ssl_cert: '/etc/puppetlabs/puppet/ssl/certs/agent.pem'
+# pabawi::integrations::puppetserver::ssl_key: '/etc/puppetlabs/puppet/ssl/private_keys/agent.pem'
+# pabawi::integrations::puppetserver::ssl_ca: '/etc/puppetlabs/puppet/ssl/certs/ca.pem'
 # pabawi::integrations::puppetserver::ssl_reject_unauthorized: true
 # pabawi::integrations::puppetserver::inactivity_threshold: 3600
 # pabawi::integrations::puppetserver::cache_ttl: 300000
