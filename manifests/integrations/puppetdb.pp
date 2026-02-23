@@ -51,9 +51,9 @@
 #
 #   # Configure via Hiera
 #   pabawi::integrations::puppetdb::server_url: 'https://puppetdb.example.com'
-#   pabawi::integrations::puppetdb::ssl_ca: '/etc/pabawi/ssl/puppetdb/ca.pem'
-#   pabawi::integrations::puppetdb::ssl_cert: '/etc/pabawi/ssl/puppetdb/cert.pem'
-#   pabawi::integrations::puppetdb::ssl_key: '/etc/pabawi/ssl/puppetdb/key.pem'
+#   pabawi::integrations::puppetdb::ssl_ca: '/opt/pabawi/certs/puppetdb/ca.pem'
+#   pabawi::integrations::puppetdb::ssl_cert: '/opt/pabawi/certs/puppetdb/cert.pem'
+#   pabawi::integrations::puppetdb::ssl_key: '/opt/pabawi/certs/puppetdb/key.pem'
 #   pabawi::integrations::puppetdb::ssl_ca_source: 'file:///etc/puppetlabs/puppet/ssl/certs/ca.pem'
 #   pabawi::integrations::puppetdb::ssl_cert_source: 'file:///etc/puppetlabs/puppet/ssl/certs/agent.pem'
 #   pabawi::integrations::puppetdb::ssl_key_source: 'file:///etc/puppetlabs/puppet/ssl/private_keys/agent.pem'
@@ -63,9 +63,9 @@ class pabawi::integrations::puppetdb (
   Optional[Stdlib::HTTPUrl] $server_url = undef,
   Integer $port = 8081,
   Boolean $ssl_enabled = true,
-  Optional[String[1]] $ssl_ca = undef,
-  Optional[String[1]] $ssl_cert = undef,
-  Optional[String[1]] $ssl_key = undef,
+  Optional[String[1]] $ssl_ca = '/opt/pabawi/certs/ca.pem',
+  Optional[String[1]] $ssl_cert = '/opt/pabawi/certs/pabawi.pem',
+  Optional[String[1]] $ssl_key = '/opt/pabawi/certs/pabawi_key.pem',
   Optional[String[1]] $ssl_ca_source = undef,
   Optional[String[1]] $ssl_cert_source = undef,
   Optional[String[1]] $ssl_key_source = undef,
@@ -74,21 +74,6 @@ class pabawi::integrations::puppetdb (
   # Validate required parameters
   unless $server_url {
     fail('pabawi::integrations::puppetdb requires server_url parameter')
-  }
-
-  # Create SSL directory for PuppetDB certificates
-  ensure_resource('file', '/etc/pabawi/ssl', {
-    'ensure' => 'directory',
-    'mode'   => '0755',
-    'owner'  => 'root',
-    'group'  => 'root',
-  })
-
-  file { '/etc/pabawi/ssl/puppetdb':
-    ensure => directory,
-    mode   => '0755',
-    owner  => 'root',
-    group  => 'root',
   }
 
   # Helper function to handle SSL file sources
@@ -104,7 +89,7 @@ class pabawi::integrations::puppetdb (
     $target_path = $item[1]['path']
 
     if $source {
-      $dest_path = "/etc/pabawi/ssl/puppetdb/${name}.pem"
+      $dest_path = "/opt/pabawi/certs/${name}.pem"
       $mode = $name ? {
         'key'   => '0600',
         default => '0644',

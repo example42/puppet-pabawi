@@ -13,7 +13,13 @@ pabawi::install_class: 'pabawi::install::npm'
 # Integration configuration
 # Simple array of enabled integrations - configuration via class parameters below
 pabawi::integrations: []
-# Example: ['bolt', 'puppetdb']
+
+# For a full Puppet setup
+#pabawi::integrations:
+#  - bolt
+#  - hiera
+#  - puppetdb
+#  - puppetserver
 
 # Integration Control:
 # 1. Array inclusion: Integration class is included (resources created, .env fragment added)
@@ -82,7 +88,7 @@ pabawi::proxy::nginx::listen_port: 443
 pabawi::proxy::nginx::backend_port: 3000
 
 # NPM installation configuration
-pabawi::install::npm::install_dir: '/opt/pabawi'
+pabawi::install::npm::install_dir: '/opt/pabawi/app'
 pabawi::install::npm::repo_url: 'https://github.com/example42/pabawi.git'
 pabawi::install::npm::version: 'main'
 pabawi::install::npm::user: 'pabawi'
@@ -90,18 +96,18 @@ pabawi::install::npm::group: 'pabawi'
 pabawi::install::npm::log_level: 'info'
 pabawi::install::npm::auth_enabled: false
 # pabawi::install::npm::jwt_secret: 'your-secret-key-here'
-pabawi::install::npm::database_path: '/var/lib/pabawi/pabawi.db'
+pabawi::install::npm::database_path: '/opt/pabawi/data/pabawi.db'
 pabawi::install::npm::concurrent_execution_limit: 5
 
 # Docker installation configuration
 pabawi::install::docker::image: 'example42/pabawi:latest'
 pabawi::install::docker::container_name: 'pabawi'
 pabawi::install::docker::auto_restart: true
-pabawi::install::docker::install_dir: '/opt/pabawi'
+pabawi::install::docker::install_dir: '/opt/pabawi/app'
 pabawi::install::docker::log_level: 'info'
 pabawi::install::docker::auth_enabled: false
 # pabawi::install::docker::jwt_secret: 'your-secret-key-here'
-pabawi::install::docker::database_path: '/var/lib/pabawi/pabawi.db'
+pabawi::install::docker::database_path: '/opt/pabawi/data/pabawi.db'
 pabawi::install::docker::concurrent_execution_limit: 5
 pabawi::install::docker::ports:
   '3000': '3000'

@@ -53,7 +53,7 @@ class pabawi::proxy::nginx (
   Stdlib::Absolutepath $ssl_key_path = '/etc/nginx/ssl/pabawi.key',
   Integer[1, 65535] $listen_port = 443,
   Integer[1, 65535] $backend_port = 3000,
-  String[1] $server_name = $facts['fqdn'],
+  String[1] $server_name = $facts['networking']['fqdn'],
 ) {
   # Validate SSL configuration
   if $ssl_enable and !$ssl_self_signed {
@@ -77,7 +77,6 @@ class pabawi::proxy::nginx (
       true    => Package['nginx'],
       default => undef,
     },
-    subscribe => File['/etc/nginx/sites-available/pabawi'],
   }
 
   # Setup SSL if enabled
@@ -138,6 +137,30 @@ class pabawi::proxy::nginx (
     }
   }
 
+  # Determine config paths based on OS family
+  case $facts['os']['family'] {
+    'Debian': {
+      $config_dir = '/etc/nginx/sites-available'
+      $config_file = '/etc/nginx/sites-available/pabawi'
+      $enabled_dir = '/etc/nginx/sites-enabled'
+      $enabled_file = '/etc/nginx/sites-enabled/pabawi'
+      $use_sites_enabled = true
+    }
+    default: {
+      $config_dir = '/etc/nginx/conf.d'
+      $config_file = '/etc/nginx/conf.d/pabawi.conf'
+      $use_sites_enabled = false
+    }
+  }
+
+  # Ensure config directory exists
+  file { $config_dir:
+    ensure => directory,
+    mode   => '0755',
+    owner  => 'root',
+    group  => 'root',
+  }
+
   # Create nginx virtual host configuration
   if $ssl_enable {
     $listen_directive = "${listen_port} ssl"
@@ -150,7 +173,7 @@ class pabawi::proxy::nginx (
     $ssl_config_content = ''
   }
 
-  file { '/etc/nginx/sites-available/pabawi':
+  file { $config_file:
     ensure  => file,
     mode    => '0644',
     owner   => 'root',
@@ -161,17 +184,33 @@ class pabawi::proxy::nginx (
       'ssl_config_content'   => $ssl_config_content,
       'backend_port'         => $backend_port,
     }),
-    require => $manage_package ? {
-      true    => Package['nginx'],
-      default => undef,
-    },
+    require => [
+      File[$config_dir],
+      $manage_package ? {
+        true    => Package['nginx'],
+        default => [],
+      },
+    ],
+    notify  => Service['nginx'],
   }
 
-  # Enable the site
-  file { '/etc/nginx/sites-enabled/pabawi':
-    ensure  => link,
-    target  => '/etc/nginx/sites-available/pabawi',
-    require => File['/etc/nginx/sites-available/pabawi'],
-    notify  => Service['nginx'],
+  # Enable the site (Debian only)
+  if $use_sites_enabled {
+    file { $enabled_dir:
+      ensure => directory,
+      mode   => '0755',
+      owner  => 'root',
+      group  => 'root',
+    }
+
+    file { $enabled_file:
+      ensure  => link,
+      target  => $config_file,
+      require => [
+        File[$config_file],
+        File[$enabled_dir],
+      ],
+      notify  => Service['nginx'],
+    }
   }
 }
