@@ -15,5 +15,5 @@ group :test do
 end
 
 group :development do
-  gem 'puppet-blacksmith', '~> 9.0'
+  gem 'puppet-blacksmith', '~> 7.0'
 end
