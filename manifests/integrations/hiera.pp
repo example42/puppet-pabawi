@@ -95,7 +95,7 @@ class pabawi::integrations::hiera (
       HIERA_ENABLED=${enabled}
       HIERA_CONTROL_REPO_PATH=${control_repo_path}
       HIERA_CONFIG_PATH=${config_path}
-      HIERA_ENVIRONMENTS=${stdlib::to_json($environments)}
+      HIERA_ENVIRONMENTS=${to_json($environments)}
       HIERA_FACT_SOURCE_PREFER_PUPPETDB=${fact_source_prefer_puppetdb}
       HIERA_FACT_SOURCE_LOCAL_PATH=${fact_source_local_path}
       | EOT

@@ -148,7 +148,7 @@ class pabawi::install::npm (
       # Pabawi Base Configuration
       LOG_LEVEL=${log_level}
       AUTH_ENABLED=${auth_enabled}
-      JWT_SECRET=${pick($jwt_secret, '')}
+      JWT_SECRET=${pick($jwt_secret, 'not-set')}
       DATABASE_PATH=${database_path}
       CONCURRENT_EXECUTION_LIMIT=${concurrent_execution_limit}
       | EOT

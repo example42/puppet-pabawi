@@ -19,6 +19,16 @@ pabawi::integrations::bolt::project_path: '/opt/bolt-project'
 # PuppetDB integration configuration (required if puppetdb_enable is true)
 pabawi::integrations::puppetdb::server_url: 'https://puppetdb.example.com:8081'
 
+# Puppet Server integration configuration
+pabawi::integrations::puppetserver::server_url: 'https://puppetserver.example.com:8140'
+
+# Hiera integration configuration
+pabawi::integrations::hiera::control_repo_path: '/etc/puppetlabs/code/environments'
+
+# Ansible integration configuration
+pabawi::integrations::ansible::inventory_source: 'puppetdb'
+pabawi::integrations::ansible::inventory_path: '/etc/ansible/inventory'
+
 # Nginx proxy configuration
 pabawi::proxy::nginx::ssl_enable: true
 pabawi::proxy::nginx::ssl_self_signed: true
@@ -27,7 +37,7 @@ pabawi::proxy::nginx::backend_port: 3000
 
 # NPM installation configuration
 pabawi::install::npm::install_dir: '/opt/pabawi'
-pabawi::install::npm::repo_url: 'https://github.com/example/pabawi.git'
+pabawi::install::npm::repo_url: 'https://github.com/example42/pabawi.git'
 pabawi::install::npm::version: 'main'
 pabawi::install::npm::user: 'pabawi'
 pabawi::install::npm::group: 'pabawi'

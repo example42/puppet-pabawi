@@ -117,9 +117,9 @@ class pabawi::integrations::ansible (
       # Ansible Integration
       ANSIBLE_ENABLED=${enabled}
       ANSIBLE_INVENTORY_PATH=${inventory_path}
-      ANSIBLE_PLAYBOOK_PATH=${pick($playbook_path, '')}
+      ANSIBLE_PLAYBOOK_PATH=${pick($playbook_path, 'not-set')}
       ANSIBLE_EXECUTION_TIMEOUT=${execution_timeout}
-      ANSIBLE_CONFIG=${pick($config, '')}
+      ANSIBLE_CONFIG=${pick($config, 'not-set')}
       | EOT
     order   => '24',
   }
