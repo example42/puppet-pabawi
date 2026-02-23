@@ -97,10 +97,11 @@ class pabawi::install::docker (
   # Create .env file using concat
   $env_file_path = "${install_dir}/.env"
   concat { 'pabawi_env_file':
-    path  => $env_file_path,
-    owner => 'root',
-    group => 'root',
-    mode  => '0600',
+    path    => $env_file_path,
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0600',
+    require => File[$install_dir],
   }
 
   # Base configuration fragment
