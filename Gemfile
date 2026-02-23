@@ -10,7 +10,7 @@ group :test do
   gem 'rspec-puppet', '~> 5.0'
   gem 'rspec-puppet-facts', '~> 5.0'
   gem 'puppet-lint', '~> 4.0'
-  gem 'metadata-json-lint', '~> 5.0'
+  gem 'metadata-json-lint', '~> 4.0'
   gem 'puppet-syntax', '~> 7.0'
 end
 
