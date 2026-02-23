@@ -57,9 +57,14 @@ class pabawi::integrations::ansible (
   Integer $execution_timeout = 300000,
   Optional[String] $config = undef,
 ) {
-  # Validate required parameters
-  unless $inventory_path {
-    fail('pabawi::integrations::ansible requires inventory_path parameter')
+  # Validate required parameters when integration is enabled
+  if $enabled {
+    unless $inventory_path {
+      fail('pabawi::integrations::ansible: inventory_path is required when enabled is true')
+    }
+    unless $playbook_path {
+      fail('pabawi::integrations::ansible: playbook_path is required when enabled is true')
+    }
   }
 
   # Manage ansible package if requested
