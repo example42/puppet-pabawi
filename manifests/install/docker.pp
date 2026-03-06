@@ -39,6 +39,12 @@
 # @param concurrent_execution_limit
 #   Maximum number of concurrent executions
 #
+# @param command_whitelist
+#   Array of allowed commands for execution control
+#
+# @param command_whitelist_allow_all
+#   Whether to bypass command whitelist and allow all commands
+#
 # @example Basic usage
 #   include pabawi::install::docker
 #
@@ -66,6 +72,8 @@ class pabawi::install::docker (
   Optional[String[1]] $jwt_secret = undef,
   Stdlib::Absolutepath $database_path = '/var/lib/pabawi/pabawi.db',
   Integer $concurrent_execution_limit = 5,
+  Array[String[1]] $command_whitelist = [],
+  Boolean $command_whitelist_allow_all = false,
 ) {
   # Validate auth configuration
   if $auth_enabled and !$jwt_secret {
@@ -105,6 +113,10 @@ class pabawi::install::docker (
   }
 
   # Base configuration fragment
+  $command_whitelist_json = $command_whitelist.empty ? {
+    true    => '[]',
+    default => "[\"${command_whitelist.join('","')}\"]",
+  }
   concat::fragment { 'pabawi_env_base':
     target  => 'pabawi_env_file',
     content => @("EOT"),
@@ -114,6 +126,8 @@ class pabawi::install::docker (
       JWT_SECRET=${pick($jwt_secret, 'not-set')}
       DATABASE_PATH=${database_path}
       CONCURRENT_EXECUTION_LIMIT=${concurrent_execution_limit}
+      COMMAND_WHITELIST=${command_whitelist_json}
+      COMMAND_WHITELIST_ALLOW_ALL=${command_whitelist_allow_all}
       | EOT
     order   => '10',
   }

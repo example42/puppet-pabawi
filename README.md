@@ -219,7 +219,7 @@ CONCURRENT_EXECUTION_LIMIT=10
 
 # Bolt Integration (order: 20)
 BOLT_PROJECT_PATH=/opt/bolt-project
-BOLT_COMMAND_WHITELIST=["ls","pwd"]
+COMMAND_WHITELIST=["ls","pwd"]
 ...
 
 # PuppetDB Integration (order: 21)
@@ -344,8 +344,8 @@ pabawi::integrations::bolt::execution_timeout: 300000
 ```
 BOLT_ENABLED=true
 BOLT_PROJECT_PATH=/opt/bolt-project
-BOLT_COMMAND_WHITELIST=["plan run","task run","command run"]
-BOLT_COMMAND_WHITELIST_ALLOW_ALL=false
+COMMAND_WHITELIST=["plan run","task run","command run"]
+COMMAND_WHITELIST_ALLOW_ALL=false
 BOLT_EXECUTION_TIMEOUT=300000
 ```
 

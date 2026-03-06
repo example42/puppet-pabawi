@@ -33,6 +33,12 @@
 # @param server_name
 #   Server name for nginx virtual host configuration
 #
+# @param command_whitelist
+#   Array of allowed commands for execution control at reverse proxy level
+#
+# @param command_whitelist_allow_all
+#   Whether to bypass command whitelist and allow all commands
+#
 # @example Basic usage with self-signed SSL
 #   include pabawi::proxy::nginx
 #
@@ -54,6 +60,8 @@ class pabawi::proxy::nginx (
   Integer[1, 65535] $listen_port = 443,
   Integer[1, 65535] $backend_port = 3000,
   String[1] $server_name = $facts['networking']['fqdn'],
+  Array[String[1]] $command_whitelist = [],
+  Boolean $command_whitelist_allow_all = false,
 ) {
   # Validate SSL configuration
   if $ssl_enable and !$ssl_self_signed {
@@ -179,10 +187,12 @@ class pabawi::proxy::nginx (
     owner   => 'root',
     group   => 'root',
     content => epp('pabawi/nginx_vhost.epp', {
-      'listen_directive'     => $listen_directive,
-      'server_name'          => $server_name,
-      'ssl_config_content'   => $ssl_config_content,
-      'backend_port'         => $backend_port,
+      'listen_directive'            => $listen_directive,
+      'server_name'                 => $server_name,
+      'ssl_config_content'          => $ssl_config_content,
+      'backend_port'                => $backend_port,
+      'command_whitelist'           => $command_whitelist,
+      'command_whitelist_allow_all' => $command_whitelist_allow_all,
     }),
     require => [
       File[$config_dir],

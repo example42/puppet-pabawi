@@ -2,18 +2,18 @@
 
 source 'https://rubygems.org'
 
-gem 'puppet', ENV['PUPPET_GEM_VERSION'] || '~> 7.0'
+gem 'puppet', ENV['PUPPET_GEM_VERSION'] || '~> 6.0'
 gem 'facter', '>= 2.4.0'
 
 group :test do
-  gem 'puppetlabs_spec_helper', '~> 8.0'
-  gem 'rspec-puppet', '~> 5.0'
-  gem 'rspec-puppet-facts', '~> 5.0'
-  gem 'puppet-lint', '~> 4.0'
-  gem 'metadata-json-lint', '~> 4.0'
-  gem 'puppet-syntax', '~> 4.0'
+  gem 'puppetlabs_spec_helper', '~> 2.0'
+  gem 'rspec-puppet', '~> 2.0'
+  gem 'rspec-puppet-facts', '~> 2.0'
+  gem 'puppet-lint', '~> 2.0'
+  gem 'metadata-json-lint', '~> 2.0'
+  gem 'puppet-syntax', '~> 2.0'
 end
 
 group :development do
-  gem 'puppet-blacksmith', '~> 7.0'
+  gem 'puppet-blacksmith', '~> 7.0' if RUBY_VERSION >= '2.7.0'
 end
