@@ -219,7 +219,7 @@ CONCURRENT_EXECUTION_LIMIT=10
 
 # Bolt Integration (order: 20)
 BOLT_PROJECT_PATH=/opt/bolt-project
-BOLT_COMMAND_WHITELIST=["ls","pwd"]
+COMMAND_WHITELIST=["ls","pwd"]
 ...
 
 # PuppetDB Integration (order: 21)
@@ -314,12 +314,16 @@ Manages Puppet Bolt project configuration.
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `enabled` | Boolean | true | Whether the integration is enabled (sets BOLT_ENABLED in .env) |
+| `settings` | Hash | {} | Hash of configuration settings (see below) |
 | `manage_package` | Boolean | false | Install puppet-bolt package |
-| `project_path` | Absolute path | - | Local path for Bolt project (required) |
 | `project_path_source` | String | undef | Git URL to clone project from |
-| `command_whitelist` | Array[String] | [] | Allowed commands (JSON array in .env) |
-| `command_whitelist_allow_all` | Boolean | false | Allow all commands (security risk) |
-| `execution_timeout` | Integer | 300000 | Command timeout in milliseconds |
+
+**Settings Hash Keys:**
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `project_path` | String | Local path for Bolt project (required) |
+| `execution_timeout` | Integer | Command timeout in milliseconds |
 
 **Example:**
 
@@ -330,22 +334,16 @@ pabawi::integrations:
 
 # Configure Bolt parameters
 pabawi::integrations::bolt::manage_package: true
-pabawi::integrations::bolt::project_path: '/opt/bolt-project'
+pabawi::integrations::bolt::settings:
+  project_path: '/opt/bolt-project'
+  execution_timeout: 300000
 pabawi::integrations::bolt::project_path_source: 'https://github.com/example/bolt-project.git'
-pabawi::integrations::bolt::command_whitelist:
-  - 'plan run'
-  - 'task run'
-  - 'command run'
-pabawi::integrations::bolt::command_whitelist_allow_all: false
-pabawi::integrations::bolt::execution_timeout: 300000
 ```
 
 **Generated .env entries:**
 ```
 BOLT_ENABLED=true
 BOLT_PROJECT_PATH=/opt/bolt-project
-BOLT_COMMAND_WHITELIST=["plan run","task run","command run"]
-BOLT_COMMAND_WHITELIST_ALLOW_ALL=false
 BOLT_EXECUTION_TIMEOUT=300000
 ```
 
@@ -358,13 +356,19 @@ Manages Ansible inventory and playbook configuration.
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `enabled` | Boolean | true | Whether the integration is enabled (sets ANSIBLE_ENABLED in .env) |
+| `settings` | Hash | {} | Hash of configuration settings (see below) |
 | `manage_package` | Boolean | false | Install ansible package |
-| `inventory_path` | Absolute path | - | Local path for inventory (required) |
 | `inventory_source` | String | undef | Git URL to clone inventory from |
-| `playbook_path` | Absolute path | undef | Local path for playbooks |
 | `playbook_source` | String | undef | Git URL to clone playbooks from |
-| `execution_timeout` | Integer | 300000 | Command timeout in milliseconds |
-| `config` | Absolute path | undef | Path to ansible.cfg file |
+
+**Settings Hash Keys:**
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `inventory_path` | String | Local path for inventory (required) |
+| `playbook_path` | String | Local path for playbooks |
+| `execution_timeout` | Integer | Command timeout in milliseconds |
+| `config` | String | Path to ansible.cfg file |
 
 **Example:**
 
@@ -375,12 +379,13 @@ pabawi::integrations:
 
 # Configure Ansible parameters
 pabawi::integrations::ansible::manage_package: true
-pabawi::integrations::ansible::inventory_path: '/etc/ansible/inventory'
+pabawi::integrations::ansible::settings:
+  inventory_path: '/etc/ansible/inventory'
+  playbook_path: '/etc/ansible/playbooks'
+  execution_timeout: 300000
+  config: '/etc/ansible/ansible.cfg'
 pabawi::integrations::ansible::inventory_source: 'https://github.com/example/ansible-inventory.git'
-pabawi::integrations::ansible::playbook_path: '/etc/ansible/playbooks'
 pabawi::integrations::ansible::playbook_source: 'https://github.com/example/ansible-playbooks.git'
-pabawi::integrations::ansible::execution_timeout: 300000
-pabawi::integrations::ansible::config: '/etc/ansible/ansible.cfg'
 ```
 
 **Generated .env entries:**
@@ -401,16 +406,22 @@ Manages PuppetDB connection and SSL certificates.
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `enabled` | Boolean | true | Whether the integration is enabled (sets PUPPETDB_ENABLED in .env) |
-| `server_url` | String | - | PuppetDB server URL (required) |
-| `port` | Integer | 8081 | PuppetDB server port |
-| `ssl_enabled` | Boolean | true | Use SSL for connection |
-| `ssl_ca` | String | undef | Path to CA certificate |
-| `ssl_cert` | String | undef | Path to client certificate |
-| `ssl_key` | String | undef | Path to private key |
+| `settings` | Hash | {} | Hash of configuration settings (see below) |
 | `ssl_ca_source` | String | undef | URL to download CA cert from |
 | `ssl_cert_source` | String | undef | URL to download client cert from |
 | `ssl_key_source` | String | undef | URL to download private key from |
-| `ssl_reject_unauthorized` | Boolean | true | Reject unauthorized certificates |
+
+**Settings Hash Keys:**
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `server_url` | String | PuppetDB server URL (required) |
+| `port` | Integer | PuppetDB server port |
+| `ssl_enabled` | Boolean | Use SSL for connection |
+| `ssl_ca` | String | Path to CA certificate |
+| `ssl_cert` | String | Path to client certificate |
+| `ssl_key` | String | Path to private key |
+| `ssl_reject_unauthorized` | Boolean | Reject unauthorized certificates |
 
 **Example:**
 
@@ -420,26 +431,16 @@ pabawi::integrations:
   - puppetdb
 
 # Configure PuppetDB parameters
-pabawi::integrations::puppetdb::server_url: 'https://puppetdb.example.com'
-pabawi::integrations::puppetdb::port: 8081
-pabawi::integrations::puppetdb::ssl_enabled: true
-pabawi::integrations::puppetdb::ssl_ca: '/etc/puppetlabs/puppet/ssl/certs/ca.pem'
-pabawi::integrations::puppetdb::ssl_cert: '/etc/puppetlabs/puppet/ssl/certs/agent.pem'
-pabawi::integrations::puppetdb::ssl_key: '/etc/puppetlabs/puppet/ssl/private_keys/agent.pem'
-pabawi::integrations::puppetdb::ssl_reject_unauthorized: true
-```
-
-**With certificate sources:**
-
-```yaml
-pabawi::integrations:
-  - puppetdb
-
-pabawi::integrations::puppetdb::server_url: 'https://puppetdb.example.com'
-pabawi::integrations::puppetdb::port: 8081
-pabawi::integrations::puppetdb::ssl_enabled: true
+pabawi::integrations::puppetdb::settings:
+  server_url: 'https://puppetdb.example.com'
+  port: 8081
+  ssl_enabled: true
+  ssl_ca: '/etc/pabawi/ssl/puppetdb/ca.pem'
+  ssl_cert: '/etc/pabawi/ssl/puppetdb/cert.pem'
+  ssl_key: '/etc/pabawi/ssl/puppetdb/key.pem'
+  ssl_reject_unauthorized: true
 pabawi::integrations::puppetdb::ssl_ca_source: 'file:///etc/puppetlabs/puppet/ssl/certs/ca.pem'
-pabawi::integrations::puppetdb::ssl_cert_source: 'https://certserver.example.com/certs/pabawi.pem'
+pabawi::integrations::puppetdb::ssl_cert_source: 'file:///etc/puppetlabs/puppet/ssl/certs/agent.pem'
 pabawi::integrations::puppetdb::ssl_key_source: 'file:///etc/puppetlabs/puppet/ssl/private_keys/agent.pem'
 ```
 
@@ -464,21 +465,27 @@ Manages Puppet Server connection with advanced circuit breaker configuration.
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `enabled` | Boolean | true | Whether the integration is enabled (sets PUPPETSERVER_ENABLED in .env) |
-| `server_url` | String | - | Puppet Server URL (required) |
-| `port` | Integer | 8140 | Puppet Server port |
-| `ssl_enabled` | Boolean | true | Use SSL for connection |
-| `ssl_ca` | String | undef | Path to CA certificate |
-| `ssl_cert` | String | undef | Path to client certificate |
-| `ssl_key` | String | undef | Path to private key |
+| `settings` | Hash | {} | Hash of configuration settings (see below) |
 | `ssl_ca_source` | String | undef | URL to download CA cert from |
 | `ssl_cert_source` | String | undef | URL to download client cert from |
 | `ssl_key_source` | String | undef | URL to download private key from |
-| `ssl_reject_unauthorized` | Boolean | true | Reject unauthorized certificates |
-| `inactivity_threshold` | Integer | 3600 | Node inactivity threshold (seconds) |
-| `cache_ttl` | Integer | 300000 | Cache TTL (milliseconds) |
-| `circuit_breaker_threshold` | Integer | 5 | Failures before circuit opens |
-| `circuit_breaker_timeout` | Integer | 60000 | Circuit breaker timeout (ms) |
-| `circuit_breaker_reset_timeout` | Integer | 30000 | Circuit reset timeout (ms) |
+
+**Settings Hash Keys:**
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `server_url` | String | Puppet Server URL (required) |
+| `port` | Integer | Puppet Server port |
+| `ssl_enabled` | Boolean | Use SSL for connection |
+| `ssl_ca` | String | Path to CA certificate |
+| `ssl_cert` | String | Path to client certificate |
+| `ssl_key` | String | Path to private key |
+| `ssl_reject_unauthorized` | Boolean | Reject unauthorized certificates |
+| `inactivity_threshold` | Integer | Node inactivity threshold (seconds) |
+| `cache_ttl` | Integer | Cache TTL (milliseconds) |
+| `circuit_breaker_threshold` | Integer | Failures before circuit opens |
+| `circuit_breaker_timeout` | Integer | Circuit breaker timeout (ms) |
+| `circuit_breaker_reset_timeout` | Integer | Circuit reset timeout (ms) |
 
 **Example:**
 
@@ -488,18 +495,22 @@ pabawi::integrations:
   - puppetserver
 
 # Configure Puppet Server parameters
-pabawi::integrations::puppetserver::server_url: 'https://puppet.example.com'
-pabawi::integrations::puppetserver::port: 8140
-pabawi::integrations::puppetserver::ssl_enabled: true
-pabawi::integrations::puppetserver::ssl_ca: '/etc/puppetlabs/puppet/ssl/certs/ca.pem'
-pabawi::integrations::puppetserver::ssl_cert: '/etc/puppetlabs/puppet/ssl/certs/agent.pem'
-pabawi::integrations::puppetserver::ssl_key: '/etc/puppetlabs/puppet/ssl/private_keys/agent.pem'
-pabawi::integrations::puppetserver::ssl_reject_unauthorized: true
-pabawi::integrations::puppetserver::inactivity_threshold: 3600
-pabawi::integrations::puppetserver::cache_ttl: 300000
-pabawi::integrations::puppetserver::circuit_breaker_threshold: 5
-pabawi::integrations::puppetserver::circuit_breaker_timeout: 60000
-pabawi::integrations::puppetserver::circuit_breaker_reset_timeout: 30000
+pabawi::integrations::puppetserver::settings:
+  server_url: 'https://puppet.example.com'
+  port: 8140
+  ssl_enabled: true
+  ssl_ca: '/etc/pabawi/ssl/puppetserver/ca.pem'
+  ssl_cert: '/etc/pabawi/ssl/puppetserver/cert.pem'
+  ssl_key: '/etc/pabawi/ssl/puppetserver/key.pem'
+  ssl_reject_unauthorized: true
+  inactivity_threshold: 3600
+  cache_ttl: 300000
+  circuit_breaker_threshold: 5
+  circuit_breaker_timeout: 60000
+  circuit_breaker_reset_timeout: 30000
+pabawi::integrations::puppetserver::ssl_ca_source: 'file:///etc/puppetlabs/puppet/ssl/certs/ca.pem'
+pabawi::integrations::puppetserver::ssl_cert_source: 'file:///etc/puppetlabs/puppet/ssl/certs/agent.pem'
+pabawi::integrations::puppetserver::ssl_key_source: 'file:///etc/puppetlabs/puppet/ssl/private_keys/agent.pem'
 ```
 
 ### Hiera Integration
@@ -511,13 +522,19 @@ Manages Hiera control repository and fact sources.
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `enabled` | Boolean | true | Whether the integration is enabled (sets HIERA_ENABLED in .env) |
+| `settings` | Hash | {} | Hash of configuration settings (see below) |
 | `manage_package` | Boolean | false | Install hiera package |
-| `control_repo_path` | Absolute path | - | Local path for control repo (required) |
 | `control_repo_source` | String | undef | Git URL to clone control repo from |
-| `config_path` | String | 'hiera_pabawi.yaml' | Hiera config file (relative to repo) |
-| `environments` | Array[String] | ['production'] | Puppet environments to support |
-| `fact_source_prefer_puppetdb` | Boolean | true | Prefer PuppetDB for facts |
-| `fact_source_local_path` | Absolute path | undef | Local path for fact files |
+
+**Settings Hash Keys:**
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `control_repo_path` | String | Local path for control repo (required) |
+| `config_path` | String | Hiera config file (relative to repo) |
+| `environments` | Array[String] | Puppet environments to support |
+| `fact_source_prefer_puppetdb` | Boolean | Prefer PuppetDB for facts |
+| `fact_source_local_path` | String | Local path for fact files |
 
 **Example:**
 
@@ -528,14 +545,15 @@ pabawi::integrations:
 
 # Configure Hiera parameters
 pabawi::integrations::hiera::manage_package: false
-pabawi::integrations::hiera::control_repo_path: '/opt/control-repo'
+pabawi::integrations::hiera::settings:
+  control_repo_path: '/opt/control-repo'
+  config_path: 'hiera.yaml'
+  environments:
+    - 'production'
+    - 'development'
+    - 'staging'
+  fact_source_prefer_puppetdb: true
 pabawi::integrations::hiera::control_repo_source: 'https://github.com/example/control-repo.git'
-pabawi::integrations::hiera::config_path: 'hiera.yaml'
-pabawi::integrations::hiera::environments:
-  - 'production'
-  - 'development'
-  - 'staging'
-pabawi::integrations::hiera::fact_source_prefer_puppetdb: true
 ```
 
 **Generated .env entries:**
@@ -545,7 +563,6 @@ HIERA_CONTROL_REPO_PATH=/opt/control-repo
 HIERA_CONFIG_PATH=hiera.yaml
 HIERA_ENVIRONMENTS=["production","development","staging"]
 HIERA_FACT_SOURCE_PREFER_PUPPETDB=true
-HIERA_FACT_SOURCE_LOCAL_PATH=
 ```
 
 ## Examples
@@ -569,51 +586,58 @@ pabawi::integrations:
 
 # Bolt integration configuration
 pabawi::integrations::bolt::manage_package: true
-pabawi::integrations::bolt::project_path: '/opt/bolt-project'
+pabawi::integrations::bolt::settings:
+  project_path: '/opt/bolt-project'
+  execution_timeout: 300000
 pabawi::integrations::bolt::project_path_source: 'https://github.com/myorg/bolt-project.git'
-pabawi::integrations::bolt::command_whitelist:
-  - 'plan run'
-  - 'task run'
-pabawi::integrations::bolt::command_whitelist_allow_all: false
-pabawi::integrations::bolt::execution_timeout: 300000
 
 # Ansible integration configuration
 pabawi::integrations::ansible::manage_package: true
-pabawi::integrations::ansible::inventory_path: '/etc/ansible/inventory'
+pabawi::integrations::ansible::settings:
+  inventory_path: '/etc/ansible/inventory'
+  playbook_path: '/etc/ansible/playbooks'
+  execution_timeout: 300000
 pabawi::integrations::ansible::inventory_source: 'https://github.com/myorg/ansible-inventory.git'
-pabawi::integrations::ansible::playbook_path: '/etc/ansible/playbooks'
 pabawi::integrations::ansible::playbook_source: 'https://github.com/myorg/ansible-playbooks.git'
-pabawi::integrations::ansible::execution_timeout: 300000
 
 # PuppetDB integration configuration
-pabawi::integrations::puppetdb::server_url: 'https://puppetdb.myorg.com'
-pabawi::integrations::puppetdb::port: 8081
-pabawi::integrations::puppetdb::ssl_enabled: true
+pabawi::integrations::puppetdb::settings:
+  server_url: 'https://puppetdb.myorg.com'
+  port: 8081
+  ssl_enabled: true
+  ssl_ca: '/etc/pabawi/ssl/puppetdb/ca.pem'
+  ssl_cert: '/etc/pabawi/ssl/puppetdb/cert.pem'
+  ssl_key: '/etc/pabawi/ssl/puppetdb/key.pem'
+  ssl_reject_unauthorized: true
 pabawi::integrations::puppetdb::ssl_ca_source: 'file:///etc/puppetlabs/puppet/ssl/certs/ca.pem'
 pabawi::integrations::puppetdb::ssl_cert_source: 'file:///etc/puppetlabs/puppet/ssl/certs/agent.pem'
 pabawi::integrations::puppetdb::ssl_key_source: 'file:///etc/puppetlabs/puppet/ssl/private_keys/agent.pem'
-pabawi::integrations::puppetdb::ssl_reject_unauthorized: true
 
 # Puppet Server integration configuration
-pabawi::integrations::puppetserver::server_url: 'https://puppet.myorg.com'
-pabawi::integrations::puppetserver::port: 8140
-pabawi::integrations::puppetserver::ssl_enabled: true
+pabawi::integrations::puppetserver::settings:
+  server_url: 'https://puppet.myorg.com'
+  port: 8140
+  ssl_enabled: true
+  ssl_ca: '/etc/pabawi/ssl/puppetserver/ca.pem'
+  ssl_cert: '/etc/pabawi/ssl/puppetserver/cert.pem'
+  ssl_key: '/etc/pabawi/ssl/puppetserver/key.pem'
+  ssl_reject_unauthorized: true
+  inactivity_threshold: 3600
+  cache_ttl: 300000
 pabawi::integrations::puppetserver::ssl_ca_source: 'file:///etc/puppetlabs/puppet/ssl/certs/ca.pem'
 pabawi::integrations::puppetserver::ssl_cert_source: 'file:///etc/puppetlabs/puppet/ssl/certs/agent.pem'
 pabawi::integrations::puppetserver::ssl_key_source: 'file:///etc/puppetlabs/puppet/ssl/private_keys/agent.pem'
-pabawi::integrations::puppetserver::ssl_reject_unauthorized: true
-pabawi::integrations::puppetserver::inactivity_threshold: 3600
-pabawi::integrations::puppetserver::cache_ttl: 300000
 
 # Hiera integration configuration
 pabawi::integrations::hiera::manage_package: false
-pabawi::integrations::hiera::control_repo_path: '/opt/control-repo'
+pabawi::integrations::hiera::settings:
+  control_repo_path: '/opt/control-repo'
+  config_path: 'hiera.yaml'
+  environments:
+    - 'production'
+    - 'development'
+  fact_source_prefer_puppetdb: true
 pabawi::integrations::hiera::control_repo_source: 'https://github.com/myorg/control-repo.git'
-pabawi::integrations::hiera::config_path: 'hiera.yaml'
-pabawi::integrations::hiera::environments:
-  - 'production'
-  - 'development'
-pabawi::integrations::hiera::fact_source_prefer_puppetdb: true
 
 # Nginx proxy settings
 pabawi::proxy::nginx::ssl_enable: true
@@ -641,8 +665,12 @@ pabawi::integrations:
   - puppetdb
 
 # Configure PuppetDB
-pabawi::integrations::puppetdb::server_url: 'https://puppetdb.example.com'
-pabawi::integrations::puppetdb::ssl_enabled: true
+pabawi::integrations::puppetdb::settings:
+  server_url: 'https://puppetdb.example.com'
+  ssl_enabled: true
+  ssl_ca: '/etc/pabawi/ssl/puppetdb/ca.pem'
+  ssl_cert: '/etc/pabawi/ssl/puppetdb/cert.pem'
+  ssl_key: '/etc/pabawi/ssl/puppetdb/key.pem'
 pabawi::integrations::puppetdb::ssl_ca_source: 'https://certserver.example.com/ca.pem'
 pabawi::integrations::puppetdb::ssl_cert_source: 'https://certserver.example.com/pabawi.pem'
 pabawi::integrations::puppetdb::ssl_key_source: 'https://certserver.example.com/pabawi-key.pem'
@@ -662,9 +690,8 @@ pabawi::integrations:
   - bolt
 
 # Configure Bolt
-pabawi::integrations::bolt::project_path: '/opt/bolt-project'
-pabawi::integrations::bolt::command_whitelist:
-  - 'plan run'
+pabawi::integrations::bolt::settings:
+  project_path: '/opt/bolt-project'
 ```
 
 ## Reference

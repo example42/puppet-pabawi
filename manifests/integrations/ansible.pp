@@ -6,64 +6,53 @@
 # @param enabled
 #   Whether the integration is enabled (sets ANSIBLE_ENABLED in .env)
 #
+# @param settings
+#   Hash of Pabawi application configuration settings written to .env with ANSIBLE_ prefix.
+#   Supported keys: inventory_path, playbook_path, execution_timeout, config
+#
 # @param manage_package
 #   Whether to install ansible package
 #
-# @param inventory_path
-#   Local path for ansible inventory
-#
 # @param inventory_source
-#   Git URL to clone inventory from (optional)
-#
-# @param playbook_path
-#   Local path for ansible playbooks
+#   Git URL to clone inventory from (optional). Clones to settings['inventory_path']
 #
 # @param playbook_source
-#   Git URL to clone playbooks from (optional)
+#   Git URL to clone playbooks from (optional). Clones to settings['playbook_path']
 #
-# @param execution_timeout
-#   Timeout for ansible command execution in milliseconds
-#
-# @param config
-#   Path to ansible configuration file (optional)
-#
-# @example Basic usage
-#   class { 'pabawi':
-#     integrations => ['ansible'],
+# @example Basic usage with settings hash
+#   class { 'pabawi::integrations::ansible':
+#     settings => {
+#       'inventory_path'     => '/opt/pabawi/ansible/inventory',
+#       'playbook_path'      => '/opt/pabawi/ansible/playbooks',
+#       'execution_timeout'  => 300000,
+#       'config'             => '/etc/ansible/ansible.cfg',
+#     },
 #   }
-#
-#   # Configure via Hiera
-#   pabawi::integrations::ansible::inventory_path: '/etc/ansible/inventory'
-#   pabawi::integrations::ansible::playbook_path: '/etc/ansible/playbooks'
 #
 # @example With git repositories
-#   class { 'pabawi':
-#     integrations => ['ansible'],
+#   class { 'pabawi::integrations::ansible':
+#     settings => {
+#       'inventory_path' => '/opt/pabawi/ansible/inventory',
+#       'playbook_path'  => '/opt/pabawi/ansible/playbooks',
+#     },
+#     inventory_source => 'https://github.com/example/ansible-inventory.git',
+#     playbook_source  => 'https://github.com/example/ansible-playbooks.git',
 #   }
-#
-#   # Configure via Hiera
-#   pabawi::integrations::ansible::inventory_path: '/etc/ansible/inventory'
-#   pabawi::integrations::ansible::inventory_source: 'https://github.com/example/ansible-inventory.git'
-#   pabawi::integrations::ansible::playbook_path: '/etc/ansible/playbooks'
-#   pabawi::integrations::ansible::playbook_source: 'https://github.com/example/ansible-playbooks.git'
 #
 class pabawi::integrations::ansible (
   Boolean $enabled = true,
+  Hash $settings = {},
   Boolean $manage_package = false,
-  Optional[Stdlib::Absolutepath] $inventory_path = '/opt/pabawi/ansible',
   Optional[String[1]] $inventory_source = undef,
-  Optional[Stdlib::Absolutepath] $playbook_path = '/opt/pabawi/ansible',
   Optional[String[1]] $playbook_source = undef,
-  Integer $execution_timeout = 300000,
-  Optional[Stdlib::Absolutepath] $config = undef,
 ) {
   # Validate required parameters when integration is enabled
   if $enabled {
-    unless $inventory_path {
-      fail('pabawi::integrations::ansible: inventory_path is required when enabled is true')
+    if $inventory_source and !$settings['inventory_path'] {
+      fail('pabawi::integrations::ansible: settings[\'inventory_path\'] is required when inventory_source is provided')
     }
-    unless $playbook_path {
-      fail('pabawi::integrations::ansible: playbook_path is required when enabled is true')
+    if $playbook_source and !$settings['playbook_path'] {
+      fail('pabawi::integrations::ansible: settings[\'playbook_path\'] is required when playbook_source is provided')
     }
   }
 
@@ -76,6 +65,7 @@ class pabawi::integrations::ansible (
 
   # Clone inventory repository if source is provided
   if $inventory_source {
+    $inventory_path = $settings['inventory_path']
     # Ensure parent directory exists
     $inventory_parent_dir = dirname($inventory_path)
     exec { "create_ansible_inventory_parent_dir_${inventory_path}":
@@ -93,7 +83,8 @@ class pabawi::integrations::ansible (
   }
 
   # Clone playbook repository if source is provided
-  if $playbook_source and $playbook_path {
+  if $playbook_source {
+    $playbook_path = $settings['playbook_path']
     # Ensure parent directory exists
     $playbook_parent_dir = dirname($playbook_path)
     exec { "create_ansible_playbook_parent_dir_${playbook_path}":
@@ -110,16 +101,38 @@ class pabawi::integrations::ansible (
     }
   }
 
+  # Transform settings hash values to .env format
+  # Arrays -> JSON, Booleans -> lowercase strings, Integers -> strings, undef/empty -> 'not-set'
+  $env_vars = $settings.reduce({}) |$memo, $pair| {
+    $key = $pair[0]
+    $value = $pair[1]
+
+    # Transform value based on type
+    $transformed = $value ? {
+      Array   => inline_template('[<%= @value.map { |v| "\"#{v}\"" }.join(",") %>]'),
+      Boolean => $value ? { true => 'true', false => 'false' },
+      Integer => String($value),
+      String  => $value,
+      Undef   => 'not-set',
+      default => pick($value, 'not-set'),
+    }
+
+    $env_key = upcase($key)
+    $memo + { "ANSIBLE_${env_key}" => $transformed }
+  }
+
+  # Build environment variable lines
+  $env_lines = $env_vars.map |$key, $value| {
+    "${key}=${value}"
+  }.join("\n")
+
   # Add configuration to .env file via concat fragment
   concat::fragment { 'pabawi_env_ansible':
     target  => 'pabawi_env_file',
     content => @("EOT"),
       # Ansible Integration
-      ANSIBLE_ENABLED=${enabled}
-      ANSIBLE_INVENTORY_PATH=${inventory_path}
-      ANSIBLE_PLAYBOOK_PATH=${pick($playbook_path, 'not-set')}
-      ANSIBLE_EXECUTION_TIMEOUT=${execution_timeout}
-      ANSIBLE_CONFIG=${pick($config, 'not-set')}
+      ANSIBLE_ENABLED=${enabled ? { true => 'true', false => 'false' }}
+      ${env_lines}
       | EOT
     order   => '24',
   }

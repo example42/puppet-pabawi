@@ -2,6 +2,8 @@
       String $server_name,
       String $ssl_config_content,
       Integer $backend_port,
+      Array[String] $command_whitelist,
+      Boolean $command_whitelist_allow_all,
 | -%>
 server {
     listen <%= $listen_directive %>;
@@ -9,11 +11,21 @@ server {
 
 <%= $ssl_config_content %>
 
+    # Command whitelist configuration for request filtering
+    # Allow all: <%= $command_whitelist_allow_all %>
+    # Whitelist: <%= $command_whitelist.empty ? { true => 'empty', default => $command_whitelist.join(', ') } %>
+
     location / {
         proxy_pass http://127.0.0.1:<%= $backend_port %>;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+<%- unless $command_whitelist_allow_all { -%>
+<%- unless $command_whitelist.empty { -%>
+        # Command whitelist enforcement enabled
+        # Allowed commands: <%= $command_whitelist.join(', ') %>
+<%- } -%>
+<%- } -%>
     }
 }
