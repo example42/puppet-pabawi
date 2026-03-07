@@ -143,13 +143,15 @@ pabawi::integrations:
   - bolt
   - puppetdb
 
-# Configure each integration via class parameters
-pabawi::integrations::bolt::project_path: '/opt/bolt-project'
-pabawi::integrations::bolt::command_whitelist:
-  - 'plan run'
-  - 'task run'
+# Configure each integration via class parameters using settings hash
+pabawi::integrations::bolt::settings:
+  project_path: '/opt/bolt-project'
+  execution_timeout: 300000
 
-pabawi::integrations::puppetdb::server_url: 'https://puppetdb.example.com:8081'
+pabawi::integrations::puppetdb::settings:
+  server_url: 'https://puppetdb.example.com'
+  port: 8081
+  ssl_enabled: true
 pabawi::integrations::puppetdb::ssl_ca_source: 'file:///etc/puppetlabs/puppet/ssl/certs/ca.pem'
 ```
 
@@ -177,7 +179,8 @@ pabawi::integrations:
 
 # Configure and control enabled state
 pabawi::integrations::bolt::enabled: true  # or false to disable
-pabawi::integrations::bolt::project_path: '/opt/bolt-project'
+pabawi::integrations::bolt::settings:
+  project_path: '/opt/bolt-project'
 ```
 
 **Benefits:**
@@ -195,10 +198,9 @@ pabawi::integrations:
   - bolt
 
 pabawi::integrations::bolt::enabled: false  # Disabled but configured
-pabawi::integrations::bolt::project_path: '/opt/bolt-project'
-pabawi::integrations::bolt::command_whitelist:
-  - 'plan run'
-  - 'task run'
+pabawi::integrations::bolt::settings:
+  project_path: '/opt/bolt-project'
+  execution_timeout: 300000
 ```
 
 This generates `.env` with `BOLT_ENABLED=false`, allowing you to enable it later by simply changing the parameter to `true`.
@@ -252,7 +254,8 @@ For directory-based content (Bolt projects, Ansible inventories, Hiera control r
 pabawi::integrations:
   - bolt
 
-pabawi::integrations::bolt::project_path: '/opt/bolt-project'
+pabawi::integrations::bolt::settings:
+  project_path: '/opt/bolt-project'
 pabawi::integrations::bolt::project_path_source: 'https://github.com/example/bolt-project.git'
 ```
 
@@ -288,7 +291,8 @@ pabawi::integrations:
   - bolt
 
 pabawi::integrations::bolt::manage_package: true  # Installs puppet-bolt package
-pabawi::integrations::bolt::project_path: '/opt/bolt-project'
+pabawi::integrations::bolt::settings:
+  project_path: '/opt/bolt-project'
 ```
 
 **Note:** PuppetDB and Puppet Server integrations don't manage packages as they're external services.
@@ -694,13 +698,241 @@ pabawi::integrations::bolt::settings:
   project_path: '/opt/bolt-project'
 ```
 
+### Complete Hiera Configuration Examples
+
+#### NPM Installation with Full Integration Stack
+
+Complete Hiera configuration for NPM-based installation with Bolt, Hiera, PuppetDB, and Puppet Server integrations:
+
+```yaml
+---
+# File: data/common.yaml or data/nodes/<node-fqdn>.yaml
+
+# Installation method
+pabawi::install_manage: true
+pabawi::install_class: 'pabawi::install::npm'
+
+# NPM installation settings
+pabawi::install::npm::install_dir: '/opt/pabawi'
+pabawi::install::npm::repo_url: 'https://github.com/example42/pabawi.git'
+pabawi::install::npm::version: 'main'
+pabawi::install::npm::user: 'pabawi'
+pabawi::install::npm::group: 'pabawi'
+pabawi::install::npm::auth_enabled: true
+pabawi::install::npm::jwt_secret: 'change-this-to-a-secure-random-string'
+pabawi::install::npm::log_level: 'info'
+pabawi::install::npm::concurrent_execution_limit: 10
+
+# Proxy configuration
+pabawi::proxy_manage: true
+pabawi::proxy_class: 'pabawi::proxy::nginx'
+
+# Nginx proxy settings
+pabawi::proxy::nginx::server_name: 'pabawi.example.com'
+pabawi::proxy::nginx::listen_port: 443
+pabawi::proxy::nginx::backend_port: 3000
+pabawi::proxy::nginx::ssl_enable: true
+pabawi::proxy::nginx::ssl_self_signed: false
+pabawi::proxy::nginx::ssl_cert: '/etc/ssl/certs/pabawi.example.com.crt'
+pabawi::proxy::nginx::ssl_key: '/etc/ssl/private/pabawi.example.com.key'
+
+# Enable integrations
+pabawi::integrations:
+  - bolt
+  - hiera
+  - puppetdb
+  - puppetserver
+
+# Bolt Integration
+pabawi::integrations::bolt::enabled: true
+pabawi::integrations::bolt::manage_package: true
+pabawi::integrations::bolt::settings:
+  project_path: '/opt/pabawi-bolt-project'
+  execution_timeout: 300000
+pabawi::integrations::bolt::project_path_source: 'https://github.com/example/bolt-project.git'
+
+# Hiera Integration
+pabawi::integrations::hiera::enabled: true
+pabawi::integrations::hiera::manage_package: false
+pabawi::integrations::hiera::settings:
+  control_repo_path: '/opt/pabawi-control-repo'
+  config_path: 'hiera.yaml'
+  environments:
+    - 'production'
+    - 'development'
+    - 'staging'
+  fact_source_prefer_puppetdb: true
+pabawi::integrations::hiera::control_repo_source: 'https://github.com/example/control-repo.git'
+
+# PuppetDB Integration
+pabawi::integrations::puppetdb::enabled: true
+pabawi::integrations::puppetdb::settings:
+  server_url: 'https://puppetdb.example.com'
+  port: 8081
+  ssl_enabled: true
+  ssl_ca: '/etc/pabawi/ssl/puppetdb/ca.pem'
+  ssl_cert: '/etc/pabawi/ssl/puppetdb/cert.pem'
+  ssl_key: '/etc/pabawi/ssl/puppetdb/key.pem'
+  ssl_reject_unauthorized: true
+pabawi::integrations::puppetdb::ssl_ca_source: 'file:///etc/puppetlabs/puppet/ssl/certs/ca.pem'
+pabawi::integrations::puppetdb::ssl_cert_source: 'file:///etc/puppetlabs/puppet/ssl/certs/%{facts.fqdn}.pem'
+pabawi::integrations::puppetdb::ssl_key_source: 'file:///etc/puppetlabs/puppet/ssl/private_keys/%{facts.fqdn}.pem'
+
+# Puppet Server Integration
+pabawi::integrations::puppetserver::enabled: true
+pabawi::integrations::puppetserver::settings:
+  server_url: 'https://puppet.example.com'
+  port: 8140
+  ssl_enabled: true
+  ssl_ca: '/etc/pabawi/ssl/puppetserver/ca.pem'
+  ssl_cert: '/etc/pabawi/ssl/puppetserver/cert.pem'
+  ssl_key: '/etc/pabawi/ssl/puppetserver/key.pem'
+  ssl_reject_unauthorized: true
+  inactivity_threshold: 3600
+  cache_ttl: 300000
+  circuit_breaker_threshold: 5
+  circuit_breaker_timeout: 60000
+  circuit_breaker_reset_timeout: 30000
+pabawi::integrations::puppetserver::ssl_ca_source: 'file:///etc/puppetlabs/puppet/ssl/certs/ca.pem'
+pabawi::integrations::puppetserver::ssl_cert_source: 'file:///etc/puppetlabs/puppet/ssl/certs/%{facts.fqdn}.pem'
+pabawi::integrations::puppetserver::ssl_key_source: 'file:///etc/puppetlabs/puppet/ssl/private_keys/%{facts.fqdn}.pem'
+```
+
+#### Docker Installation with Full Integration Stack
+
+Complete Hiera configuration for Docker-based installation with the same integrations:
+
+```yaml
+---
+# File: data/common.yaml or data/nodes/<node-fqdn>.yaml
+
+# Installation method
+pabawi::install_manage: true
+pabawi::install_class: 'pabawi::install::docker'
+
+# Docker installation settings
+pabawi::install::docker::install_dir: '/opt/pabawi'
+pabawi::install::docker::image: 'example42/pabawi:latest'
+pabawi::install::docker::container_name: 'pabawi'
+pabawi::install::docker::backend_port: 3000
+pabawi::install::docker::user: 'pabawi'
+pabawi::install::docker::group: 'pabawi'
+pabawi::install::docker::auth_enabled: true
+pabawi::install::docker::jwt_secret: 'change-this-to-a-secure-random-string'
+pabawi::install::docker::log_level: 'info'
+pabawi::install::docker::concurrent_execution_limit: 10
+pabawi::install::docker::volumes:
+  - '/opt/pabawi-bolt-project:/app/bolt-project:ro'
+  - '/opt/pabawi-control-repo:/app/control-repo:ro'
+  - '/etc/pabawi/ssl:/app/ssl:ro'
+  - '/opt/pabawi/data:/app/data'
+
+# Proxy configuration
+pabawi::proxy_manage: true
+pabawi::proxy_class: 'pabawi::proxy::nginx'
+
+# Nginx proxy settings
+pabawi::proxy::nginx::server_name: 'pabawi.example.com'
+pabawi::proxy::nginx::listen_port: 443
+pabawi::proxy::nginx::backend_port: 3000
+pabawi::proxy::nginx::ssl_enable: true
+pabawi::proxy::nginx::ssl_self_signed: false
+pabawi::proxy::nginx::ssl_cert: '/etc/ssl/certs/pabawi.example.com.crt'
+pabawi::proxy::nginx::ssl_key: '/etc/ssl/private/pabawi.example.com.key'
+
+# Enable integrations
+pabawi::integrations:
+  - bolt
+  - hiera
+  - puppetdb
+  - puppetserver
+
+# Bolt Integration
+pabawi::integrations::bolt::enabled: true
+pabawi::integrations::bolt::manage_package: true
+pabawi::integrations::bolt::settings:
+  project_path: '/app/bolt-project'  # Path inside container
+  execution_timeout: 300000
+pabawi::integrations::bolt::project_path_source: 'https://github.com/example/bolt-project.git'
+
+# Hiera Integration
+pabawi::integrations::hiera::enabled: true
+pabawi::integrations::hiera::manage_package: false
+pabawi::integrations::hiera::settings:
+  control_repo_path: '/app/control-repo'  # Path inside container
+  config_path: 'hiera.yaml'
+  environments:
+    - 'production'
+    - 'development'
+    - 'staging'
+  fact_source_prefer_puppetdb: true
+pabawi::integrations::hiera::control_repo_source: 'https://github.com/example/control-repo.git'
+
+# PuppetDB Integration
+pabawi::integrations::puppetdb::enabled: true
+pabawi::integrations::puppetdb::settings:
+  server_url: 'https://puppetdb.example.com'
+  port: 8081
+  ssl_enabled: true
+  ssl_ca: '/app/ssl/puppetdb/ca.pem'  # Path inside container
+  ssl_cert: '/app/ssl/puppetdb/cert.pem'
+  ssl_key: '/app/ssl/puppetdb/key.pem'
+  ssl_reject_unauthorized: true
+pabawi::integrations::puppetdb::ssl_ca_source: 'file:///etc/puppetlabs/puppet/ssl/certs/ca.pem'
+pabawi::integrations::puppetdb::ssl_cert_source: 'file:///etc/puppetlabs/puppet/ssl/certs/%{facts.fqdn}.pem'
+pabawi::integrations::puppetdb::ssl_key_source: 'file:///etc/puppetlabs/puppet/ssl/private_keys/%{facts.fqdn}.pem'
+
+# Puppet Server Integration
+pabawi::integrations::puppetserver::enabled: true
+pabawi::integrations::puppetserver::settings:
+  server_url: 'https://puppet.example.com'
+  port: 8140
+  ssl_enabled: true
+  ssl_ca: '/app/ssl/puppetserver/ca.pem'  # Path inside container
+  ssl_cert: '/app/ssl/puppetserver/cert.pem'
+  ssl_key: '/app/ssl/puppetserver/key.pem'
+  ssl_reject_unauthorized: true
+  inactivity_threshold: 3600
+  cache_ttl: 300000
+  circuit_breaker_threshold: 5
+  circuit_breaker_timeout: 60000
+  circuit_breaker_reset_timeout: 30000
+pabawi::integrations::puppetserver::ssl_ca_source: 'file:///etc/puppetlabs/puppet/ssl/certs/ca.pem'
+pabawi::integrations::puppetserver::ssl_cert_source: 'file:///etc/puppetlabs/puppet/ssl/certs/%{facts.fqdn}.pem'
+pabawi::integrations::puppetserver::ssl_key_source: 'file:///etc/puppetlabs/puppet/ssl/private_keys/%{facts.fqdn}.pem'
+```
+
+#### Key Differences Between NPM and Docker Configurations
+
+**NPM Installation:**
+- `.env` file location: `/opt/pabawi/backend/.env`
+- Paths reference host filesystem directly
+- Bolt project path: `/opt/pabawi-bolt-project`
+- Control repo path: `/opt/pabawi-control-repo`
+- SSL certificates: `/etc/pabawi/ssl/<integration>/`
+
+**Docker Installation:**
+- `.env` file location: `/opt/pabawi/.env` (mounted into container)
+- Paths reference container filesystem (mounted volumes)
+- Bolt project path: `/app/bolt-project` (mounted from `/opt/pabawi-bolt-project`)
+- Control repo path: `/app/control-repo` (mounted from `/opt/pabawi-control-repo`)
+- SSL certificates: `/app/ssl/<integration>/` (mounted from `/etc/pabawi/ssl`)
+- Requires volume mounts in `pabawi::install::docker::volumes`
+
+**Important Notes:**
+1. Replace `example.com` with your actual domain
+2. Change JWT secret to a secure random string
+3. Update git repository URLs to your actual repositories
+4. Adjust SSL certificate paths if using different locations
+5. For Docker, ensure volume mounts align with paths in settings
+6. Use Puppet facts (e.g., `%{facts.fqdn}`) for dynamic certificate paths
+
 ## Reference
 
 See [REFERENCE.md](REFERENCE.md) for detailed parameter documentation generated from Puppet Strings.
 
 ## Limitations
 
-- Currently tested on RedHat/CentOS 7+ and Ubuntu 18.04+
 - Docker installation method requires Docker to be available
 - SSL certificate management requires proper file permissions
 - Git repository cloning requires git to be installed
