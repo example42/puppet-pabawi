@@ -68,12 +68,6 @@ class pabawi::integrations::puppetdb (
     if $ssl_key_source and !$settings['ssl_key'] {
       fail('pabawi::integrations::puppetdb: settings[\'ssl_key\'] is required when ssl_key_source is provided')
     }
-
-    # SSL configuration validation - all three SSL sources should be provided together
-    $ssl_sources_provided = [$ssl_ca_source, $ssl_cert_source, $ssl_key_source].filter |$val| { $val != undef }
-    if $ssl_sources_provided.length > 0 and $ssl_sources_provided.length < 3 {
-      fail('pabawi::integrations::puppetdb: When SSL certificates are used, all three SSL sources (ssl_ca_source, ssl_cert_source, ssl_key_source) must be provided together')
-    }
   }
 
   # Deploy SSL certificates if sources are provided
@@ -83,7 +77,7 @@ class pabawi::integrations::puppetdb (
 
     # Handle file:// URLs
     if $ssl_ca_source =~ /^file:\/\/(.+)$/ {
-      $source_path = $1
+      $source_path = regsubst($ssl_ca_source, '^file://', '')
       file { $ssl_ca_path:
         ensure => file,
         source => $source_path,
@@ -124,7 +118,7 @@ class pabawi::integrations::puppetdb (
 
     # Handle file:// URLs
     if $ssl_cert_source =~ /^file:\/\/(.+)$/ {
-      $source_path = $1
+      $source_path = regsubst($ssl_cert_source, '^file://', '')
       file { $ssl_cert_path:
         ensure => file,
         source => $source_path,
@@ -165,7 +159,7 @@ class pabawi::integrations::puppetdb (
 
     # Handle file:// URLs
     if $ssl_key_source =~ /^file:\/\/(.+)$/ {
-      $source_path = $1
+      $source_path = regsubst($ssl_key_source, '^file://', '')
       file { $ssl_key_path:
         ensure => file,
         source => $source_path,
