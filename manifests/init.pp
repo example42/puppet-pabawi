@@ -82,13 +82,6 @@ class pabawi (
 
   # Process integrations - deduplicate then include each class
   $integrations.unique.each |String $name| {
-    $integration_class = "pabawi::integrations::${name}"
-
-    notify { "pabawi_integration_${name}":
-      message  => "Enabling integration: ${integration_class}",
-      loglevel => 'notice',
-    }
-
-    include $integration_class
+    include "pabawi::integrations::${name}"
   }
 }

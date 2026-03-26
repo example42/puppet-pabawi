@@ -120,12 +120,6 @@ describe 'pabawi' do
           is_expected.not_to contain_class('pabawi::integrations::ansible')
         end
 
-        it 'creates notify resource for each integration' do
-          is_expected.to contain_notify('pabawi_integration_terraform').with(
-            'message' => 'Enabling integration: pabawi::integrations::terraform',
-            'loglevel' => 'notice',
-          )
-        end
       end
 
       context 'with multiple integrations' do
