@@ -72,10 +72,12 @@ class pabawi::integrations::puppetdb (
 
   # Deploy SSL certificates if sources are provided
   if $ssl_ca_source {
-    $ssl_ca_path = $settings['ssl_ca']
-    $ssl_ca_dir  = dirname($ssl_ca_path)
-    $ssl_ca_mode = '0644'
-    ensure_resource('file', $ssl_ca_dir, { ensure => directory, owner => 'root', group => 'root', mode => '0755' })
+    $ssl_ca_path   = $settings['ssl_ca']
+    $ssl_ca_dir    = dirname($ssl_ca_path)
+    $ssl_ca_parent = dirname($ssl_ca_dir)
+    $ssl_ca_mode   = '0644'
+    ensure_resource('file', $ssl_ca_parent, { ensure => directory, owner => 'root', group => 'root', mode => '0755' })
+    ensure_resource('file', $ssl_ca_dir, { ensure => directory, owner => 'root', group => 'root', mode => '0755', require => File[$ssl_ca_parent] })
 
     # Handle file:// URLs
     if $ssl_ca_source =~ /^file:\/\/(.+)$/ {
@@ -117,10 +119,12 @@ class pabawi::integrations::puppetdb (
   }
 
   if $ssl_cert_source {
-    $ssl_cert_path = $settings['ssl_cert']
-    $ssl_cert_dir  = dirname($ssl_cert_path)
-    $ssl_cert_mode = '0644'
-    ensure_resource('file', $ssl_cert_dir, { ensure => directory, owner => 'root', group => 'root', mode => '0755' })
+    $ssl_cert_path   = $settings['ssl_cert']
+    $ssl_cert_dir    = dirname($ssl_cert_path)
+    $ssl_cert_parent = dirname($ssl_cert_dir)
+    $ssl_cert_mode   = '0644'
+    ensure_resource('file', $ssl_cert_parent, { ensure => directory, owner => 'root', group => 'root', mode => '0755' })
+    ensure_resource('file', $ssl_cert_dir, { ensure => directory, owner => 'root', group => 'root', mode => '0755', require => File[$ssl_cert_parent] })
 
     # Handle file:// URLs
     if $ssl_cert_source =~ /^file:\/\/(.+)$/ {
@@ -162,10 +166,12 @@ class pabawi::integrations::puppetdb (
   }
 
   if $ssl_key_source {
-    $ssl_key_path = $settings['ssl_key']
-    $ssl_key_dir  = dirname($ssl_key_path)
-    $ssl_key_mode = '0600'
-    ensure_resource('file', $ssl_key_dir, { ensure => directory, owner => 'root', group => 'root', mode => '0755' })
+    $ssl_key_path   = $settings['ssl_key']
+    $ssl_key_dir    = dirname($ssl_key_path)
+    $ssl_key_parent = dirname($ssl_key_dir)
+    $ssl_key_mode   = '0600'
+    ensure_resource('file', $ssl_key_parent, { ensure => directory, owner => 'root', group => 'root', mode => '0755' })
+    ensure_resource('file', $ssl_key_dir, { ensure => directory, owner => 'root', group => 'root', mode => '0755', require => File[$ssl_key_parent] })
 
     # Handle file:// URLs
     if $ssl_key_source =~ /^file:\/\/(.+)$/ {
