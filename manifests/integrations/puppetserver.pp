@@ -89,10 +89,9 @@ class pabawi::integrations::puppetserver (
 
     # Handle file:// URLs
     if $ssl_ca_source =~ /^file:\/\/(.+)$/ {
-      $source_path = regsubst($ssl_ca_source, '^file://', '')
       file { $ssl_ca_path:
         ensure => file,
-        source => $source_path,
+        source => regsubst($ssl_ca_source, '^file://', ''),
         mode   => $ssl_ca_mode,
         owner  => 'root',
         group  => 'root',
@@ -130,10 +129,9 @@ class pabawi::integrations::puppetserver (
 
     # Handle file:// URLs
     if $ssl_cert_source =~ /^file:\/\/(.+)$/ {
-      $source_path = regsubst($ssl_cert_source, '^file://', '')
       file { $ssl_cert_path:
         ensure => file,
-        source => $source_path,
+        source => regsubst($ssl_cert_source, '^file://', ''),
         mode   => $ssl_cert_mode,
         owner  => 'root',
         group  => 'root',
@@ -171,10 +169,9 @@ class pabawi::integrations::puppetserver (
 
     # Handle file:// URLs
     if $ssl_key_source =~ /^file:\/\/(.+)$/ {
-      $source_path = regsubst($ssl_key_source, '^file://', '')
       file { $ssl_key_path:
         ensure => file,
-        source => $source_path,
+        source => regsubst($ssl_key_source, '^file://', ''),
         mode   => $ssl_key_mode,
         owner  => 'root',
         group  => 'root',
