@@ -131,7 +131,7 @@ class pabawi::integrations::ansible (
     target  => 'pabawi_env_file',
     content => @("EOT"),
       # Ansible Integration
-      ANSIBLE_ENABLED=${enabled ? { true => 'true', false => 'false' }}
+      ANSIBLE_ENABLED=${enabled}
       ${env_lines}
       | EOT
     order   => '24',

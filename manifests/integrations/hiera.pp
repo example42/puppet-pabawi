@@ -106,7 +106,7 @@ class pabawi::integrations::hiera (
     target  => 'pabawi_env_file',
     content => @("EOT"),
       # Hiera Integration
-      HIERA_ENABLED=${enabled ? { true => 'true', false => 'false' }}
+      HIERA_ENABLED=${enabled}
       ${env_lines}
       | EOT
     order   => '23',

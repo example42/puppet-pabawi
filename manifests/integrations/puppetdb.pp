@@ -230,7 +230,7 @@ class pabawi::integrations::puppetdb (
     target  => 'pabawi_env_file',
     content => @("EOT"),
       # PuppetDB Integration
-      PUPPETDB_ENABLED=${enabled ? { true => 'true', false => 'false' }}
+      PUPPETDB_ENABLED=${enabled}
       ${env_lines}
       | EOT
     order   => '21',
