@@ -72,7 +72,7 @@ class pabawi::integrations::ssh (
     target  => 'pabawi_env_file',
     content => @("EOT"),
       # SSH Integration
-      SSH_ENABLED=${enabled ? { true => 'true', false => 'false' }}
+      SSH_ENABLED=${enabled}
       ${env_lines}
       | EOT
     order   => '25',

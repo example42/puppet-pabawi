@@ -102,7 +102,7 @@ class pabawi::integrations::bolt (
     target  => 'pabawi_env_file',
     content => @("EOT"),
       # Bolt Integration
-      BOLT_ENABLED=${enabled ? { true => 'true', false => 'false' }}
+      BOLT_ENABLED=${enabled}
       ${env_lines}
       | EOT
     order   => '20',

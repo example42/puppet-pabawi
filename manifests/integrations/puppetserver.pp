@@ -236,7 +236,7 @@ class pabawi::integrations::puppetserver (
     target  => 'pabawi_env_file',
     content => @("EOT"),
       # Puppet Server Integration
-      PUPPETSERVER_ENABLED=${enabled ? { true => 'true', false => 'false' }}
+      PUPPETSERVER_ENABLED=${enabled}
       ${env_lines}
       | EOT
     order   => '22',
