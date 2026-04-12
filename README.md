@@ -52,8 +52,6 @@ Pabawi is a unified web interface for interacting with various Puppet ecosystem 
 - puppetlabs/stdlib
 - puppetlabs/concat
 - puppetlabs/vcsrepo
-- puppet/nginx (for nginx proxy)
-- puppetlabs/docker (for docker installation method)
 
 ### Installation
 

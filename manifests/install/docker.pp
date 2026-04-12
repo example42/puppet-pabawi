@@ -69,6 +69,11 @@
 # @param container_gid
 #   GID of the application group inside the container.
 #
+# @param container_bind_address
+#   IP address the application binds to inside the container. This is
+#   written to HOST= in the .env file. Should almost always be 0.0.0.0
+#   so the app is reachable through Docker's port mapping.
+#
 # @param docker_extra_args
 #   Additional arguments to pass to `docker run`.
 #
@@ -115,6 +120,7 @@ class pabawi::install::docker (
   Integer $concurrent_execution_limit = 5,
   Array[String[1]] $command_whitelist = [],
   Boolean $command_whitelist_allow_all = false,
+  String[1] $container_bind_address = '0.0.0.0',
   String $docker_extra_args = '',
 ) {
   # Docker binary path
@@ -173,7 +179,7 @@ class pabawi::install::docker (
     target  => 'pabawi_env_file',
     content => @("EOT"),
       # Pabawi Base Configuration
-      HOST=${bind_address}
+      HOST=${container_bind_address}
       LOG_LEVEL=${log_level}
       AUTH_ENABLED=${auth_enabled}
       JWT_SECRET=${jwt_secret}
