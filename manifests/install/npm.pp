@@ -214,7 +214,7 @@ class pabawi::install::npm (
       User=${user}
       Group=${group}
       WorkingDirectory=${install_dir}
-      ExecStart=/usr/bin/node ${install_dir}/bin/pabawi
+      ExecStart=/usr/bin/node ${install_dir}/backend/dist/server.js
       Restart=on-failure
       RestartSec=10
       StandardOutput=journal
