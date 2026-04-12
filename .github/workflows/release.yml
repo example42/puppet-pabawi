@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      - name: Fix git ownership
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: "PDK Build"
         uses: docker://puppet/pdk:3.4.0.1.55.g4519dd0
         with:

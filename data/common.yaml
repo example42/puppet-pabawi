@@ -1,6 +1,10 @@
 ---
 # Default configuration for Pabawi module
 # These values can be overridden in environment-specific or node-specific Hiera data
+#
+# All paths default to /opt/pabawi/<component> for both npm and Docker installs.
+# Users only need to specify *_source parameters in Hiera to tell Puppet where
+# to fetch git repos, certificates, or other files from.
 
 # Proxy management
 pabawi::proxy_manage: true
@@ -20,6 +24,9 @@ pabawi::integrations: []
 #  - hiera
 #  - puppetdb
 #  - puppetserver
+#  - ssh
+#  - proxmox
+#  - aws
 
 # Integration Control:
 # 1. Array inclusion: Integration class is included (resources created, .env fragment added)
@@ -28,58 +35,105 @@ pabawi::integrations: []
 # This allows pre-configuration without enabling, and easy toggling via enabled parameter
 
 # Bolt integration configuration
-# pabawi::integrations::bolt::enabled: true  # Set to false to disable but keep configured
-pabawi::integrations::bolt::project_path: '/opt/bolt-project'
+# pabawi::integrations::bolt::enabled: true
+# pabawi::integrations::bolt::settings:
+#   project_path: '/opt/pabawi/bolt-project'       # default, override if needed
+#   execution_timeout: 300000
 # pabawi::integrations::bolt::project_path_source: 'https://github.com/example/bolt-project.git'
 # pabawi::integrations::bolt::manage_package: false
-# pabawi::integrations::bolt::command_whitelist: ['plan run', 'task run']
-# pabawi::integrations::bolt::command_whitelist_allow_all: false
-# pabawi::integrations::bolt::execution_timeout: 300000
 
 # PuppetDB integration configuration
-# pabawi::integrations::puppetdb::enabled: true  # Set to false to disable but keep configured
-pabawi::integrations::puppetdb::server_url: 'https://puppetdb.example.com:8081'
-# pabawi::integrations::puppetdb::port: 8081
-# pabawi::integrations::puppetdb::ssl_enabled: true
-# pabawi::integrations::puppetdb::ssl_cert: '/etc/puppetlabs/puppet/ssl/certs/agent.pem'
-# pabawi::integrations::puppetdb::ssl_key: '/etc/puppetlabs/puppet/ssl/private_keys/agent.pem'
-# pabawi::integrations::puppetdb::ssl_ca: '/etc/puppetlabs/puppet/ssl/certs/ca.pem'
-# pabawi::integrations::puppetdb::ssl_reject_unauthorized: true
+# pabawi::integrations::puppetdb::enabled: true
+# pabawi::integrations::puppetdb::settings:
+#   server_url: 'https://puppetdb.example.com'
+#   port: 8081
+#   ssl_enabled: true
+#   ssl_ca: '/opt/pabawi/certs/puppetdb/ca.pem'       # default, override if needed
+#   ssl_cert: '/opt/pabawi/certs/puppetdb/cert.pem'    # default, override if needed
+#   ssl_key: '/opt/pabawi/certs/puppetdb/key.pem'      # default, override if needed
+#   ssl_reject_unauthorized: true
+# pabawi::integrations::puppetdb::ssl_ca_source: 'file:///etc/puppetlabs/puppet/ssl/certs/ca.pem'
+# pabawi::integrations::puppetdb::ssl_cert_source: 'file:///etc/puppetlabs/puppet/ssl/certs/agent.pem'
+# pabawi::integrations::puppetdb::ssl_key_source: 'file:///etc/puppetlabs/puppet/ssl/private_keys/agent.pem'
 
 # Puppet Server integration configuration
-# pabawi::integrations::puppetserver::enabled: true  # Set to false to disable but keep configured
-pabawi::integrations::puppetserver::server_url: 'https://puppet.example.com:8140'
-# pabawi::integrations::puppetserver::port: 8140
-# pabawi::integrations::puppetserver::ssl_enabled: true
-# pabawi::integrations::puppetserver::ssl_cert: '/etc/puppetlabs/puppet/ssl/certs/agent.pem'
-# pabawi::integrations::puppetserver::ssl_key: '/etc/puppetlabs/puppet/ssl/private_keys/agent.pem'
-# pabawi::integrations::puppetserver::ssl_ca: '/etc/puppetlabs/puppet/ssl/certs/ca.pem'
-# pabawi::integrations::puppetserver::ssl_reject_unauthorized: true
-# pabawi::integrations::puppetserver::inactivity_threshold: 3600
-# pabawi::integrations::puppetserver::cache_ttl: 300000
-# pabawi::integrations::puppetserver::circuit_breaker_threshold: 5
-# pabawi::integrations::puppetserver::circuit_breaker_timeout: 60000
-# pabawi::integrations::puppetserver::circuit_breaker_reset_timeout: 30000
+# pabawi::integrations::puppetserver::enabled: true
+# pabawi::integrations::puppetserver::settings:
+#   server_url: 'https://puppet.example.com'
+#   port: 8140
+#   ssl_enabled: true
+#   ssl_ca: '/opt/pabawi/certs/puppetserver/ca.pem'       # default, override if needed
+#   ssl_cert: '/opt/pabawi/certs/puppetserver/cert.pem'    # default, override if needed
+#   ssl_key: '/opt/pabawi/certs/puppetserver/key.pem'      # default, override if needed
+#   ssl_reject_unauthorized: true
+#   inactivity_threshold: 3600
+#   cache_ttl: 300000
+#   circuit_breaker_threshold: 5
+#   circuit_breaker_timeout: 60000
+#   circuit_breaker_reset_timeout: 30000
+# pabawi::integrations::puppetserver::ssl_ca_source: 'file:///etc/puppetlabs/puppet/ssl/certs/ca.pem'
+# pabawi::integrations::puppetserver::ssl_cert_source: 'file:///etc/puppetlabs/puppet/ssl/certs/agent.pem'
+# pabawi::integrations::puppetserver::ssl_key_source: 'file:///etc/puppetlabs/puppet/ssl/private_keys/agent.pem'
 
 # Hiera integration configuration
-# pabawi::integrations::hiera::enabled: true  # Set to false to disable but keep configured
-pabawi::integrations::hiera::control_repo_path: '/opt/control-repo'
+# pabawi::integrations::hiera::enabled: true
+# pabawi::integrations::hiera::settings:
+#   control_repo_path: '/opt/pabawi/control-repo'    # default, override if needed
+#   config_path: 'hiera_pabawi.yaml'
+#   environments: ['production']
+#   fact_source_prefer_puppetdb: true
+#   fact_source_local_path: '/opt/pabawi/facts'
 # pabawi::integrations::hiera::control_repo_source: 'https://github.com/example/control-repo.git'
 # pabawi::integrations::hiera::manage_package: false
-# pabawi::integrations::hiera::config_path: 'hiera_pabawi.yaml'
-# pabawi::integrations::hiera::environments: ['production']
-# pabawi::integrations::hiera::fact_source_prefer_puppetdb: true
-# pabawi::integrations::hiera::fact_source_local_path: '/var/lib/puppet/facts'
 
 # Ansible integration configuration
-# pabawi::integrations::ansible::enabled: true  # Set to false to disable but keep configured
-pabawi::integrations::ansible::inventory_path: '/etc/ansible/inventory'
+# pabawi::integrations::ansible::enabled: true
+# pabawi::integrations::ansible::settings:
+#   inventory_path: '/opt/pabawi/ansible/inventory'    # default, override if needed
+#   playbook_path: '/opt/pabawi/ansible/playbooks'     # default, override if needed
+#   execution_timeout: 300000
+#   config: '/opt/pabawi/ansible/ansible.cfg'
 # pabawi::integrations::ansible::inventory_source: 'https://github.com/example/ansible-inventory.git'
-# pabawi::integrations::ansible::playbook_path: '/etc/ansible/playbooks'
 # pabawi::integrations::ansible::playbook_source: 'https://github.com/example/ansible-playbooks.git'
 # pabawi::integrations::ansible::manage_package: false
-# pabawi::integrations::ansible::execution_timeout: 300000
-# pabawi::integrations::ansible::config: '/etc/ansible/ansible.cfg'
+
+# SSH integration configuration
+# pabawi::integrations::ssh::enabled: true
+# pabawi::integrations::ssh::settings:
+#   config_path: '/opt/pabawi/ssh/config'
+#   default_user: 'root'
+#   default_port: 22
+#   default_key: '/opt/pabawi/ssh/id_rsa'
+
+# Proxmox integration configuration
+# pabawi::integrations::proxmox::enabled: true
+# pabawi::integrations::proxmox::settings:
+#   host: 'proxmox.example.com'
+#   port: 8006
+#   token: 'user@pam!tokenid=token-value'
+#   ssl_reject_unauthorized: true
+#   ssl_ca: '/opt/pabawi/certs/proxmox/ca.pem'       # default, override if needed
+#   ssl_cert: '/opt/pabawi/certs/proxmox/cert.pem'    # default, override if needed
+#   ssl_key: '/opt/pabawi/certs/proxmox/key.pem'      # default, override if needed
+#   timeout: 30000
+#   priority: 7
+# pabawi::integrations::proxmox::ssl_ca_source: 'file:///etc/ssl/certs/proxmox-ca.pem'
+# pabawi::integrations::proxmox::ssl_cert_source: 'file:///etc/ssl/certs/proxmox-cert.pem'
+# pabawi::integrations::proxmox::ssl_key_source: 'file:///etc/ssl/private/proxmox-key.pem'
+
+# AWS integration configuration
+# pabawi::integrations::aws::enabled: true
+# pabawi::integrations::aws::settings:
+#   profile: 'pabawi-prod'
+#   default_region: 'us-east-1'
+#   regions:
+#     - 'us-east-1'
+#     - 'eu-west-1'
+# Or with explicit credentials:
+# pabawi::integrations::aws::settings:
+#   access_key_id: 'AKIAIOSFODNN7EXAMPLE'
+#   secret_access_key: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
+#   default_region: 'us-east-1'
 
 # Nginx proxy configuration
 pabawi::proxy::nginx::ssl_enable: true
@@ -103,7 +157,7 @@ pabawi::install::npm::concurrent_execution_limit: 5
 pabawi::install::docker::image: 'example42/pabawi:latest'
 pabawi::install::docker::container_name: 'pabawi'
 pabawi::install::docker::auto_restart: true
-pabawi::install::docker::install_dir: '/opt/pabawi/app'
+pabawi::install::docker::install_dir: '/opt/pabawi'
 pabawi::install::docker::log_level: 'info'
 pabawi::install::docker::auth_enabled: false
 # pabawi::install::docker::jwt_secret: 'your-secret-key-here'

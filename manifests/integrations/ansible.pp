@@ -29,12 +29,8 @@
 #     },
 #   }
 #
-# @example With git repositories
+# @example Minimal usage with git repositories (paths default to /opt/pabawi/ansible/*)
 #   class { 'pabawi::integrations::ansible':
-#     settings => {
-#       'inventory_path' => '/opt/pabawi/ansible/inventory',
-#       'playbook_path'  => '/opt/pabawi/ansible/playbooks',
-#     },
 #     inventory_source => 'https://github.com/example/ansible-inventory.git',
 #     playbook_source  => 'https://github.com/example/ansible-playbooks.git',
 #   }
@@ -46,15 +42,12 @@ class pabawi::integrations::ansible (
   Optional[String[1]] $inventory_source = undef,
   Optional[String[1]] $playbook_source = undef,
 ) {
-  # Validate required parameters when integration is enabled
-  if $enabled {
-    if $inventory_source and !$settings['inventory_path'] {
-      fail('pabawi::integrations::ansible: settings[\'inventory_path\'] is required when inventory_source is provided')
-    }
-    if $playbook_source and !$settings['playbook_path'] {
-      fail('pabawi::integrations::ansible: settings[\'playbook_path\'] is required when playbook_source is provided')
-    }
+  # Merge sane defaults for local paths when source is provided but path is not
+  $_default_settings = {
+    'inventory_path' => '/opt/pabawi/ansible/inventory',
+    'playbook_path'  => '/opt/pabawi/ansible/playbooks',
   }
+  $_settings = $_default_settings + $settings
 
   # Manage ansible package if requested
   if $manage_package {
@@ -65,7 +58,7 @@ class pabawi::integrations::ansible (
 
   # Clone inventory repository if source is provided
   if $inventory_source {
-    $inventory_path = $settings['inventory_path']
+    $inventory_path = $_settings['inventory_path']
     # Ensure parent directory exists
     $inventory_parent_dir = dirname($inventory_path)
     exec { "create_ansible_inventory_parent_dir_${inventory_path}":
@@ -84,7 +77,7 @@ class pabawi::integrations::ansible (
 
   # Clone playbook repository if source is provided
   if $playbook_source {
-    $playbook_path = $settings['playbook_path']
+    $playbook_path = $_settings['playbook_path']
     # Ensure parent directory exists
     $playbook_parent_dir = dirname($playbook_path)
     exec { "create_ansible_playbook_parent_dir_${playbook_path}":
@@ -103,7 +96,7 @@ class pabawi::integrations::ansible (
 
   # Transform settings hash values to .env format
   # Arrays -> JSON, Booleans -> lowercase strings, Integers -> strings, undef/empty -> 'not-set'
-  $env_vars = $settings.reduce({}) |$memo, $pair| {
+  $env_vars = $_settings.reduce({}) |$memo, $pair| {
     $key = $pair[0]
     $value = $pair[1]
 
@@ -131,7 +124,7 @@ class pabawi::integrations::ansible (
     target  => 'pabawi_env_file',
     content => @("EOT"),
       # Ansible Integration
-      ANSIBLE_ENABLED=${enabled ? { true => 'true', false => 'false' }}
+      ANSIBLE_ENABLED=${enabled}
       ${env_lines}
       | EOT
     order   => '24',

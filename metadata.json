@@ -1,6 +1,6 @@
 {
   "name": "example42-pabawi",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "author": "Pabawi Team",
   "summary": "Puppet module for installing and configuring Pabawi application",
   "license": "Apache-2.0",
@@ -11,10 +11,6 @@
     {
       "name": "puppetlabs/stdlib",
       "version_requirement": ">= 6.0.0 < 10.0.0"
-    },
-    {
-      "name": "puppetlabs/docker",
-      "version_requirement": ">= 4.0.0 < 10.0.0"
     },
     {
       "name": "puppetlabs/vcsrepo",

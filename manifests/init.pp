@@ -22,10 +22,10 @@
 #
 # @param integrations
 #   Array of integration names to enable. Only the following integrations are
-#   supported: puppetdb, puppetserver, hiera, bolt, ansible. Duplicates are
-#   automatically removed. Integration-specific configuration is managed via
-#   class parameters in Hiera.
-#   Example: ['bolt', 'puppetdb', 'hiera']
+#   supported: puppetdb, puppetserver, hiera, bolt, ansible, ssh, proxmox, aws.
+#   Duplicates are automatically removed. Integration-specific configuration
+#   is managed via class parameters in Hiera.
+#   Example: ['bolt', 'puppetdb', 'hiera', 'ssh', 'proxmox', 'aws']
 #
 # @example Basic usage with defaults
 #   include pabawi
@@ -50,7 +50,7 @@ class pabawi (
   String[1] $proxy_class = 'pabawi::proxy::nginx',
   Boolean $install_manage = true,
   String[1] $install_class = 'pabawi::install::npm',
-  Array[Enum['puppetdb', 'puppetserver', 'hiera', 'bolt', 'ansible']] $integrations = [],
+  Array[Enum['puppetdb', 'puppetserver', 'hiera', 'bolt', 'ansible', 'ssh', 'proxmox', 'aws']] $integrations = [],
 ) {
   # Validate proxy_class is a valid class name format
   if $proxy_manage {
@@ -82,13 +82,6 @@ class pabawi (
 
   # Process integrations - deduplicate then include each class
   $integrations.unique.each |String $name| {
-    $integration_class = "pabawi::integrations::${name}"
-
-    notify { "pabawi_integration_${name}":
-      message  => "Enabling integration: ${integration_class}",
-      loglevel => 'notice',
-    }
-
-    include $integration_class
+    include "pabawi::integrations::${name}"
   }
 }

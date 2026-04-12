@@ -2,7 +2,7 @@
 
 ## Overview
 
-This Puppet module provides a flexible, modular approach to installing and configuring the Pabawi application with support for multiple installation methods (npm, docker), proxy configurations (nginx with SSL), and various integrations (Bolt, PuppetDB, and extensible integration framework). The design emphasizes separation of concerns through a class-based architecture where each component (proxy, installation, integrations) can be independently enabled, disabled, or swapped with alternative implementations.
+This Puppet module provides a flexible, modular approach to installing and configuring the Pabawi application with support for multiple installation methods (npm, docker), proxy configurations (nginx with SSL), and various integrations (Bolt, PuppetDB, Puppetserver, Hiera, Ansible, SSH, Proxmox, and AWS). The design emphasizes separation of concerns through a class-based architecture where each component (proxy, installation, integrations) can be independently enabled, disabled, or swapped with alternative implementations.
 
 The module follows Puppet best practices with Hiera-driven configuration, allowing users to customize behavior through data rather than code modifications. The architecture supports extensibility for future integrations while maintaining backward compatibility and sensible defaults.
 
@@ -12,7 +12,7 @@ The module follows Puppet best practices with Hiera-driven configuration, allowi
 graph TD
     A[pabawi::init] --> B{proxy_manage?}
     A --> C{install_manage?}
-    A --> D[Integration Manager]
+    A --> D[Integrations Loop]
     
     B -->|true| E[Dynamic Proxy Class]
     E --> F[pabawi::proxy::nginx]
@@ -22,13 +22,14 @@ graph TD
     H --> I[pabawi::install::npm]
     H --> J[pabawi::install::docker]
     
-    D --> K{bolt_enable?}
-    D --> L{puppetdb_enable?}
-    D --> M[Other Integrations]
-    
-    K -->|true| N[pabawi::integrations::bolt]
-    L -->|true| O[pabawi::integrations::puppetdb]
-    M --> P[pabawi::integrations::*]
+    D --> N[pabawi::integrations::bolt]
+    D --> O[pabawi::integrations::puppetdb]
+    D --> P[pabawi::integrations::puppetserver]
+    D --> Q2[pabawi::integrations::hiera]
+    D --> R2[pabawi::integrations::ansible]
+    D --> S2[pabawi::integrations::ssh]
+    D --> T2[pabawi::integrations::proxmox]
+    D --> U2[pabawi::integrations::aws]
     
     F --> Q[SSL Configuration]
     Q --> R[Self-Signed Certs]
@@ -63,14 +64,10 @@ sequenceDiagram
         Install->>Install: Install pabawi (npm/docker)
     end
     
-    Init->>Integrations: Process integration flags
+    Init->>Integrations: Process integrations array
     
-    alt bolt_enable == true
-        Integrations->>Integrations: Configure Bolt integration
-    end
-    
-    alt puppetdb_enable == true
-        Integrations->>Integrations: Configure PuppetDB integration
+    loop For each integration in array
+        Integrations->>Integrations: include pabawi::integrations::<name>
     end
     
     Integrations-->>Init: Integrations configured
@@ -117,12 +114,10 @@ sequenceDiagram
 ```puppet
 class pabawi (
   Boolean $proxy_manage = true,
-  String $proxy_class = 'pabawi::proxy::nginx',
+  String[1] $proxy_class = 'pabawi::proxy::nginx',
   Boolean $install_manage = true,
-  String $install_class = 'pabawi::install::npm',
-  Boolean $bolt_enable = false,
-  Boolean $puppetdb_enable = false,
-  Hash[String, Boolean] $integrations = {},
+  String[1] $install_class = 'pabawi::install::npm',
+  Array[Enum['puppetdb', 'puppetserver', 'hiera', 'bolt', 'ansible', 'ssh', 'proxmox', 'aws']] $integrations = [],
 ) {
   # Class implementation
 }
@@ -132,13 +127,13 @@ class pabawi (
 - Load and validate Hiera configuration parameters
 - Conditionally include proxy class based on proxy_manage flag
 - Conditionally include installation class based on install_manage flag
-- Iterate through integration flags and include appropriate integration classes
+- Iterate through integrations array and include appropriate integration classes
 - Ensure proper ordering and dependencies between components
 
 **Validation Rules**:
 - proxy_class must be a valid Puppet class name
 - install_class must be a valid Puppet class name
-- Integration flags must be boolean values
+- integrations must contain only valid integration names
 
 ### Component 2: Nginx Proxy Class (pabawi::proxy::nginx)
 
@@ -263,26 +258,87 @@ class pabawi::integrations::puppetdb (
 - Set up query timeout and connection parameters
 - Create integration configuration files
 
+### Component 7: SSH Integration Class (pabawi::integrations::ssh)
+
+**Purpose**: Configure Pabawi integration with direct SSH execution (connection pool, sudo support)
+
+**Interface**:
+```puppet
+class pabawi::integrations::ssh (
+  Boolean $enabled = true,
+  Hash $settings = {},
+) {
+  # Class implementation
+}
+```
+
+**Responsibilities**:
+- Configure SSH connection defaults (host, port, user, key path)
+- Set connection pool and concurrency limits
+- Configure sudo settings for privilege escalation
+- Write SSH_* environment variables to .env via concat fragment
+
+### Component 8: Proxmox Integration Class (pabawi::integrations::proxmox)
+
+**Purpose**: Configure Pabawi integration with Proxmox Virtual Environment for VM/LXC management
+
+**Interface**:
+```puppet
+class pabawi::integrations::proxmox (
+  Boolean $enabled = true,
+  Hash $settings = {},
+  Optional[String[1]] $ssl_ca_source = undef,
+  Optional[String[1]] $ssl_cert_source = undef,
+  Optional[String[1]] $ssl_key_source = undef,
+) {
+  # Class implementation
+}
+```
+
+**Responsibilities**:
+- Configure Proxmox host, port, and authentication (token or username/password)
+- Deploy SSL certificates for Proxmox API connection
+- Write PROXMOX_* environment variables to .env via concat fragment
+- Support token-based (recommended) and username/password authentication
+
+### Component 9: AWS Integration Class (pabawi::integrations::aws)
+
+**Purpose**: Configure Pabawi integration with AWS EC2 for inventory, lifecycle, and provisioning
+
+**Interface**:
+```puppet
+class pabawi::integrations::aws (
+  Boolean $enabled = true,
+  Hash $settings = {},
+) {
+  # Class implementation
+}
+```
+
+**Responsibilities**:
+- Configure AWS credentials (access key, profile, or default chain)
+- Set default region and multi-region discovery
+- Write AWS_* environment variables to .env via concat fragment
+- Support three authentication modes: explicit keys, named profile, default credential chain
+
 ## Data Models
 
 ### Model 1: Module Configuration
 
 ```puppet
 type Pabawi::Config = Struct[{
-  proxy_manage     => Boolean,
-  proxy_class      => String[1],
-  install_manage   => Boolean,
-  install_class    => String[1],
-  bolt_enable      => Boolean,
-  puppetdb_enable  => Boolean,
-  integrations     => Hash[String[1], Boolean],
+  proxy_manage   => Boolean,
+  proxy_class    => String[1],
+  install_manage => Boolean,
+  install_class  => String[1],
+  integrations   => Array[String[1]],
 }]
 ```
 
 **Validation Rules**:
 - All class names must be non-empty strings
 - Boolean flags must be explicitly true or false
-- Integration hash keys must be non-empty strings
+- integrations must be an array of valid integration names
 
 ### Model 2: SSL Configuration
 
@@ -363,32 +419,12 @@ INPUT: config of type Pabawi::Config
 OUTPUT: configured integrations
 
 BEGIN
-  // Process built-in integrations
-  IF config.bolt_enable = true THEN
-    ASSERT config.bolt_project_path is defined
-    includeClass('pabawi::integrations::bolt')
-  END IF
-  
-  IF config.puppetdb_enable = true THEN
-    ASSERT config.puppetdb_server_url is defined
-    includeClass('pabawi::integrations::puppetdb')
-  END IF
-  
-  // Process custom integrations from hash
-  FOR each (name, enabled) IN config.integrations DO
-    ASSERT enabled is Boolean
-    
-    IF enabled = true THEN
-      integrationClass ← "pabawi::integrations::" + name
-      
-      IF classExists(integrationClass) THEN
-        includeClass(integrationClass)
-      ELSE
-        logWarning("Integration class not found: " + integrationClass)
-      END IF
-    END IF
+  // Process integrations from array
+  FOR each name IN config.integrations.unique DO
+    integrationClass ← "pabawi::integrations::" + name
+    includeClass(integrationClass)
   END FOR
-  
+
   RETURN success
 END
 ```
@@ -676,16 +712,15 @@ include pabawi
 pabawi::proxy_manage: true
 pabawi::install_manage: true
 
-pabawi::bolt_enable: true
-pabawi::bolt_project_path: '/opt/bolt-project'
-
-pabawi::puppetdb_enable: true
-pabawi::puppetdb_server_url: 'https://puppetdb.example.com:8081'
-
 pabawi::integrations:
-  terraform: true
-  ansible: true
-  custom_integration: true
+  - bolt
+  - puppetdb
+  - puppetserver
+  - hiera
+  - ansible
+  - ssh
+  - proxmox
+  - aws
 
 # In manifest
 include pabawi

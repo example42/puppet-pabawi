@@ -106,32 +106,54 @@ describe 'pabawi' do
       context 'with custom integrations array' do
         let(:params) do
           {
-            integrations: ['terraform'],
+            integrations: ['proxmox'],
           }
         end
 
         it { is_expected.to compile.with_all_deps }
 
         it 'includes listed integration classes' do
-          is_expected.to contain_class('pabawi::integrations::terraform')
+          is_expected.to contain_class('pabawi::integrations::proxmox')
         end
 
         it 'does not include unlisted integration classes' do
           is_expected.not_to contain_class('pabawi::integrations::ansible')
         end
 
-        it 'creates notify resource for each integration' do
-          is_expected.to contain_notify('pabawi_integration_terraform').with(
-            'message' => 'Enabling integration: pabawi::integrations::terraform',
-            'loglevel' => 'notice',
-          )
+      end
+
+      context 'with aws integration' do
+        let(:params) do
+          {
+            integrations: ['aws'],
+          }
+        end
+
+        it { is_expected.to compile.with_all_deps }
+
+        it 'includes aws integration class' do
+          is_expected.to contain_class('pabawi::integrations::aws')
+        end
+      end
+
+      context 'with ssh integration' do
+        let(:params) do
+          {
+            integrations: ['ssh'],
+          }
+        end
+
+        it { is_expected.to compile.with_all_deps }
+
+        it 'includes ssh integration class' do
+          is_expected.to contain_class('pabawi::integrations::ssh')
         end
       end
 
       context 'with multiple integrations' do
         let(:params) do
           {
-            integrations: ['bolt', 'puppetdb', 'custom'],
+            integrations: ['bolt', 'puppetdb', 'ssh', 'proxmox', 'aws'],
           }
         end
 
@@ -140,19 +162,21 @@ describe 'pabawi' do
         it 'includes all listed integration classes' do
           is_expected.to contain_class('pabawi::integrations::bolt')
           is_expected.to contain_class('pabawi::integrations::puppetdb')
-          is_expected.to contain_class('pabawi::integrations::custom')
+          is_expected.to contain_class('pabawi::integrations::ssh')
+          is_expected.to contain_class('pabawi::integrations::proxmox')
+          is_expected.to contain_class('pabawi::integrations::aws')
         end
       end
 
       context 'with invalid integration type' do
         let(:params) do
           {
-            integrations: [123],
+            integrations: ['nonexistent'],
           }
         end
 
         it 'fails with validation error' do
-          is_expected.to compile.and_raise_error(/expects an Array\[String/)
+          is_expected.to compile.and_raise_error(/expects.*Enum/)
         end
       end
     end

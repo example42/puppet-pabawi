@@ -11,6 +11,8 @@ jobs:
     container: puppet/pdk:3.4.0.1.55.g4519dd0
     steps:
       - uses: actions/checkout@v4
+      - name: Fix git ownership
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Run static validations
         run: /usr/local/bin/pdk bundle exec rake validate lint check
         env:
@@ -20,10 +22,11 @@ jobs:
     name: 'Unit tests'
     runs-on: ubuntu-latest
     timeout-minutes: 60
-#    container: puppet/puppet-dev-tools:4.x
     container: puppet/pdk:3.4.0.1.55.g4519dd0
     steps:
       - uses: actions/checkout@v4
+      - name: Fix git ownership
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Run unit tests on Puppet 8
         run: /usr/local/bin/pdk test unit  --puppet-version=8
         env:
@@ -42,6 +45,8 @@ jobs:
     container: puppet/pdk:3.4.0.1.55.g4519dd0
     steps:
       - uses: actions/checkout@v4
+      - name: Fix git ownership
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Run unit tests on Puppet 6
         run: /usr/local/bin/pdk test unit --puppet-version=6
         env:

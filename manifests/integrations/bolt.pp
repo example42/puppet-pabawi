@@ -25,11 +25,8 @@
 #     },
 #   }
 #
-# @example With git repository
+# @example Minimal usage with git repository (project_path defaults to /opt/pabawi/bolt-project)
 #   class { 'pabawi::integrations::bolt':
-#     settings => {
-#       'project_path' => '/opt/pabawi/bolt-project',
-#     },
 #     project_path_source => 'https://github.com/example/bolt-project.git',
 #   }
 #
@@ -39,12 +36,11 @@ class pabawi::integrations::bolt (
   Boolean $manage_package = false,
   Optional[String[1]] $project_path_source = undef,
 ) {
-  # Validate required parameters when integration is enabled
-  if $enabled {
-    if $project_path_source and !$settings['project_path'] {
-      fail('pabawi::integrations::bolt: settings[\'project_path\'] is required when project_path_source is provided')
-    }
+  # Merge sane defaults for local paths when source is provided but path is not
+  $_default_settings = {
+    'project_path' => '/opt/pabawi/bolt-project',
   }
+  $_settings = $_default_settings + $settings
 
   # Manage bolt package if requested
   if $manage_package {
@@ -55,7 +51,7 @@ class pabawi::integrations::bolt (
 
   # Clone git repository if source is provided
   if $project_path_source {
-    $project_path = $settings['project_path']
+    $project_path = $_settings['project_path']
     # Ensure parent directory exists
     $parent_dir = dirname($project_path)
     exec { "create_bolt_parent_dir_${project_path}":
@@ -74,7 +70,7 @@ class pabawi::integrations::bolt (
 
   # Transform settings hash values to .env format
   # Arrays -> JSON, Booleans -> lowercase strings, Integers -> strings, undef/empty -> 'not-set'
-  $env_vars = $settings.reduce({}) |$memo, $pair| {
+  $env_vars = $_settings.reduce({}) |$memo, $pair| {
     $key = $pair[0]
     $value = $pair[1]
 
@@ -102,7 +98,7 @@ class pabawi::integrations::bolt (
     target  => 'pabawi_env_file',
     content => @("EOT"),
       # Bolt Integration
-      BOLT_ENABLED=${enabled ? { true => 'true', false => 'false' }}
+      BOLT_ENABLED=${enabled}
       ${env_lines}
       | EOT
     order   => '20',

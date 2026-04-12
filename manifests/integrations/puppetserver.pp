@@ -62,20 +62,16 @@ class pabawi::integrations::puppetserver (
   Optional[String[1]] $ssl_cert_source = undef,
   Optional[String[1]] $ssl_key_source = undef,
 ) {
-  # Validate required parameters when integration is enabled
-  if $enabled {
-    # Source-path consistency validation
-    if $ssl_ca_source and !$settings['ssl_ca'] {
-      fail('pabawi::integrations::puppetserver: settings[\'ssl_ca\'] is required when ssl_ca_source is provided')
-    }
-    if $ssl_cert_source and !$settings['ssl_cert'] {
-      fail('pabawi::integrations::puppetserver: settings[\'ssl_cert\'] is required when ssl_cert_source is provided')
-    }
-    if $ssl_key_source and !$settings['ssl_key'] {
-      fail('pabawi::integrations::puppetserver: settings[\'ssl_key\'] is required when ssl_key_source is provided')
-    }
+  # Merge sane defaults for local paths when source is provided but path is not
+  $_default_settings = {
+    'ssl_ca'   => '/opt/pabawi/certs/puppetserver/ca.pem',
+    'ssl_cert' => '/opt/pabawi/certs/puppetserver/cert.pem',
+    'ssl_key'  => '/opt/pabawi/certs/puppetserver/key.pem',
+  }
+  $_settings = $_default_settings + $settings
 
-    # SSL configuration validation - all three SSL sources should be provided together
+  # Validate that SSL sources are provided together when any is specified
+  if $enabled {
     $ssl_sources_provided = [$ssl_ca_source, $ssl_cert_source, $ssl_key_source].filter |$val| { $val != undef }
     if $ssl_sources_provided.length > 0 and $ssl_sources_provided.length < 3 {
       fail('pabawi::integrations::puppetserver: When SSL certificates are used, all three SSL sources (ssl_ca_source, ssl_cert_source, ssl_key_source) must be provided together')
@@ -84,18 +80,22 @@ class pabawi::integrations::puppetserver (
 
   # Deploy SSL certificates if sources are provided
   if $ssl_ca_source {
-    $ssl_ca_path = $settings['ssl_ca']
-    $ssl_ca_mode = '0644'
+    $ssl_ca_path   = $_settings['ssl_ca']
+    $ssl_ca_dir    = dirname($ssl_ca_path)
+    $ssl_ca_parent = dirname($ssl_ca_dir)
+    $ssl_ca_mode   = '0644'
+    ensure_resource('file', $ssl_ca_parent, { ensure => directory, owner => 'root', group => 'root', mode => '0755' })
+    ensure_resource('file', $ssl_ca_dir, { ensure => directory, owner => 'root', group => 'root', mode => '0755', require => File[$ssl_ca_parent] })
 
     # Handle file:// URLs
     if $ssl_ca_source =~ /^file:\/\/(.+)$/ {
-      $source_path = $1
       file { $ssl_ca_path:
-        ensure => file,
-        source => $source_path,
-        mode   => $ssl_ca_mode,
-        owner  => 'root',
-        group  => 'root',
+        ensure  => file,
+        source  => regsubst($ssl_ca_source, '^file://', ''),
+        mode    => $ssl_ca_mode,
+        owner   => 'root',
+        group   => 'root',
+        require => File[$ssl_ca_dir],
       }
     }
     # Handle https:// URLs
@@ -104,6 +104,7 @@ class pabawi::integrations::puppetserver (
         command => "curl -sL -o ${ssl_ca_path} ${ssl_ca_source}",
         path    => ['/usr/bin', '/bin'],
         creates => $ssl_ca_path,
+        require => File[$ssl_ca_dir],
       }
       -> file { $ssl_ca_path:
         ensure => file,
@@ -115,28 +116,33 @@ class pabawi::integrations::puppetserver (
     # Handle direct file paths
     else {
       file { $ssl_ca_path:
-        ensure => file,
-        source => $ssl_ca_source,
-        mode   => $ssl_ca_mode,
-        owner  => 'root',
-        group  => 'root',
+        ensure  => file,
+        source  => $ssl_ca_source,
+        mode    => $ssl_ca_mode,
+        owner   => 'root',
+        group   => 'root',
+        require => File[$ssl_ca_dir],
       }
     }
   }
 
   if $ssl_cert_source {
-    $ssl_cert_path = $settings['ssl_cert']
-    $ssl_cert_mode = '0644'
+    $ssl_cert_path   = $_settings['ssl_cert']
+    $ssl_cert_dir    = dirname($ssl_cert_path)
+    $ssl_cert_parent = dirname($ssl_cert_dir)
+    $ssl_cert_mode   = '0644'
+    ensure_resource('file', $ssl_cert_parent, { ensure => directory, owner => 'root', group => 'root', mode => '0755' })
+    ensure_resource('file', $ssl_cert_dir, { ensure => directory, owner => 'root', group => 'root', mode => '0755', require => File[$ssl_cert_parent] })
 
     # Handle file:// URLs
     if $ssl_cert_source =~ /^file:\/\/(.+)$/ {
-      $source_path = $1
       file { $ssl_cert_path:
-        ensure => file,
-        source => $source_path,
-        mode   => $ssl_cert_mode,
-        owner  => 'root',
-        group  => 'root',
+        ensure  => file,
+        source  => regsubst($ssl_cert_source, '^file://', ''),
+        mode    => $ssl_cert_mode,
+        owner   => 'root',
+        group   => 'root',
+        require => File[$ssl_cert_dir],
       }
     }
     # Handle https:// URLs
@@ -145,6 +151,7 @@ class pabawi::integrations::puppetserver (
         command => "curl -sL -o ${ssl_cert_path} ${ssl_cert_source}",
         path    => ['/usr/bin', '/bin'],
         creates => $ssl_cert_path,
+        require => File[$ssl_cert_dir],
       }
       -> file { $ssl_cert_path:
         ensure => file,
@@ -156,28 +163,33 @@ class pabawi::integrations::puppetserver (
     # Handle direct file paths
     else {
       file { $ssl_cert_path:
-        ensure => file,
-        source => $ssl_cert_source,
-        mode   => $ssl_cert_mode,
-        owner  => 'root',
-        group  => 'root',
+        ensure  => file,
+        source  => $ssl_cert_source,
+        mode    => $ssl_cert_mode,
+        owner   => 'root',
+        group   => 'root',
+        require => File[$ssl_cert_dir],
       }
     }
   }
 
   if $ssl_key_source {
-    $ssl_key_path = $settings['ssl_key']
-    $ssl_key_mode = '0600'
+    $ssl_key_path   = $_settings['ssl_key']
+    $ssl_key_dir    = dirname($ssl_key_path)
+    $ssl_key_parent = dirname($ssl_key_dir)
+    $ssl_key_mode   = '0600'
+    ensure_resource('file', $ssl_key_parent, { ensure => directory, owner => 'root', group => 'root', mode => '0755' })
+    ensure_resource('file', $ssl_key_dir, { ensure => directory, owner => 'root', group => 'root', mode => '0755', require => File[$ssl_key_parent] })
 
     # Handle file:// URLs
     if $ssl_key_source =~ /^file:\/\/(.+)$/ {
-      $source_path = $1
       file { $ssl_key_path:
-        ensure => file,
-        source => $source_path,
-        mode   => $ssl_key_mode,
-        owner  => 'root',
-        group  => 'root',
+        ensure  => file,
+        source  => regsubst($ssl_key_source, '^file://', ''),
+        mode    => $ssl_key_mode,
+        owner   => 'root',
+        group   => 'root',
+        require => File[$ssl_key_dir],
       }
     }
     # Handle https:// URLs
@@ -186,6 +198,7 @@ class pabawi::integrations::puppetserver (
         command => "curl -sL -o ${ssl_key_path} ${ssl_key_source}",
         path    => ['/usr/bin', '/bin'],
         creates => $ssl_key_path,
+        require => File[$ssl_key_dir],
       }
       -> file { $ssl_key_path:
         ensure => file,
@@ -197,18 +210,19 @@ class pabawi::integrations::puppetserver (
     # Handle direct file paths
     else {
       file { $ssl_key_path:
-        ensure => file,
-        source => $ssl_key_source,
-        mode   => $ssl_key_mode,
-        owner  => 'root',
-        group  => 'root',
+        ensure  => file,
+        source  => $ssl_key_source,
+        mode    => $ssl_key_mode,
+        owner   => 'root',
+        group   => 'root',
+        require => File[$ssl_key_dir],
       }
     }
   }
 
   # Transform settings hash values to .env format
   # Arrays -> JSON, Booleans -> lowercase strings, Integers -> strings, undef/empty -> 'not-set'
-  $env_vars = $settings.reduce({}) |$memo, $pair| {
+  $env_vars = $_settings.reduce({}) |$memo, $pair| {
     $key = $pair[0]
     $value = $pair[1]
 
@@ -236,7 +250,7 @@ class pabawi::integrations::puppetserver (
     target  => 'pabawi_env_file',
     content => @("EOT"),
       # Puppet Server Integration
-      PUPPETSERVER_ENABLED=${enabled ? { true => 'true', false => 'false' }}
+      PUPPETSERVER_ENABLED=${enabled}
       ${env_lines}
       | EOT
     order   => '22',
