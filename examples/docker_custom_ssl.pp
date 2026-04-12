@@ -14,7 +14,7 @@ class { 'pabawi::proxy::nginx':
 }
 
 class { 'pabawi::install::docker':
-  image          => 'example42/pabawi:v1.0.0',
-  auth_enabled   => true,
-  jwt_secret     => 'change-this-to-a-secure-random-string',
+  image        => 'example42/pabawi:v1.0.0',
+  auth_enabled => true,
+  jwt_secret   => 'change-this-to-a-secure-random-string',
 }

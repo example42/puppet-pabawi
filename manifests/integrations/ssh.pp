@@ -1,42 +1,41 @@
 # @summary Configure Pabawi integration with SSH
 #
 # This class manages the integration between Pabawi and SSH,
-# including SSH connection configuration and .env file settings.
+# writing connection pool and execution defaults to the .env file.
 #
 # @param enabled
 #   Whether the integration is enabled (sets SSH_ENABLED in .env)
 #
 # @param settings
-#   Hash of SSH configuration settings that will be written to .env file
-#   with SSH_ prefix. Supported keys include:
-#   - host: SSH host to connect to
-#   - port: SSH port (default 22)
-#   - username: SSH username
-#   - private_key_path: Path to SSH private key
-#   - timeout: Connection timeout in milliseconds
-#   - known_hosts_path: Path to known_hosts file
+#   Hash of SSH configuration settings written to .env with SSH_ prefix.
+#   Supported keys: config_path, default_user, default_port, default_key,
+#   host_key_check, connection_timeout, command_timeout, max_connections,
+#   max_connections_per_host, idle_timeout, concurrency_limit,
+#   sudo_enabled, sudo_command, sudo_passwordless, sudo_user, priority
 #
 # @example Basic usage
 #   class { 'pabawi::integrations::ssh':
-#     enabled  => true,
 #     settings => {
-#       'host'             => 'remote.example.com',
-#       'port'             => 22,
-#       'username'         => 'automation',
-#       'private_key_path' => '/opt/pabawi/ssh/id_rsa',
-#       'timeout'          => 30000,
+#       'default_user'       => 'automation',
+#       'default_port'       => 22,
+#       'default_key'        => '/opt/pabawi/ssh/id_ed25519',
+#       'host_key_check'     => true,
+#       'connection_timeout' => 30,
+#       'command_timeout'    => 300,
+#       'max_connections'    => 50,
+#       'concurrency_limit'  => 10,
 #     },
 #   }
 #
 # @example Via Hiera
 #   pabawi::integrations::ssh::enabled: true
 #   pabawi::integrations::ssh::settings:
-#     host: 'remote.example.com'
-#     port: 22
-#     username: 'automation'
-#     private_key_path: '/opt/pabawi/ssh/id_rsa'
-#     timeout: 30000
-#     known_hosts_path: '/opt/pabawi/ssh/known_hosts'
+#     default_user: 'automation'
+#     default_port: 22
+#     default_key: '/opt/pabawi/ssh/id_ed25519'
+#     host_key_check: true
+#     connection_timeout: 30
+#     max_connections: 50
 #
 class pabawi::integrations::ssh (
   Boolean $enabled = true,

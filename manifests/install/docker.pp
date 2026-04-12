@@ -104,7 +104,8 @@ class pabawi::install::docker (
     default => '0.0.0.0',
   },
   Boolean $auto_restart = true,
-  Stdlib::Absolutepath $install_dir = '/opt/pabawi',  String[1] $log_level = 'info',
+  Stdlib::Absolutepath $install_dir = '/opt/pabawi',
+  String[1] $log_level = 'info',
   Boolean $auth_enabled = false,
   String[1] $jwt_secret = fqdn_rand_string(64),
   Stdlib::Absolutepath $database_path = '/opt/pabawi/data/pabawi.db',
@@ -203,14 +204,21 @@ class pabawi::install::docker (
   ].filter |$arg| { $arg != '' }.join(' ')
 
   # Pull the image before starting the service
+  $_pull_require = $manage_docker ? {
+    true    => Service['docker'],
+    default => [],
+  }
+
   exec { "docker_pull_${container_name}":
     command => "${docker_bin} pull ${image}",
     path    => ['/usr/bin', '/bin'],
     unless  => "${docker_bin} image inspect ${image} > /dev/null 2>&1",
-    require => $manage_docker ? {
-      true    => Service['docker'],
-      default => [],
-    },
+    require => $_pull_require,
+  }
+
+  $_restart_policy = $auto_restart ? {
+    true    => 'on-failure',
+    default => 'no',
   }
 
   # Create systemd service file
@@ -232,7 +240,7 @@ class pabawi::install::docker (
       ExecStartPre=-${docker_bin} rm ${container_name}
       ExecStart=${docker_bin} run ${docker_run_args}
       ExecStop=${docker_bin} stop ${container_name}
-      Restart=${auto_restart ? { true => 'on-failure', default => 'no' }}
+      Restart=${_restart_policy}
       RestartSec=10
       StandardOutput=journal
       StandardError=journal

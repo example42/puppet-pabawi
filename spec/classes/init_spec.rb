@@ -171,12 +171,12 @@ describe 'pabawi' do
       context 'with invalid integration type' do
         let(:params) do
           {
-            integrations: [123],
+            integrations: ['nonexistent'],
           }
         end
 
         it 'fails with validation error' do
-          is_expected.to compile.and_raise_error(/expects an Array\[String/)
+          is_expected.to compile.and_raise_error(/expects.*Enum/)
         end
       end
     end

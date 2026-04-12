@@ -78,13 +78,15 @@ class pabawi::proxy::nginx (
   }
 
   # Manage nginx service
+  $_nginx_service_require = $manage_package ? {
+    true    => Package['nginx'],
+    default => undef,
+  }
+
   service { 'nginx':
-    ensure    => running,
-    enable    => true,
-    require   => $manage_package ? {
-      true    => Package['nginx'],
-      default => undef,
-    },
+    ensure  => running,
+    enable  => true,
+    require => $_nginx_service_require,
   }
 
   # Setup SSL if enabled
@@ -181,6 +183,12 @@ class pabawi::proxy::nginx (
     $ssl_config_content = ''
   }
 
+  # Build require list for config file
+  $_config_file_require = $manage_package ? {
+    true    => [File[$config_dir], Package['nginx']],
+    default => [File[$config_dir]],
+  }
+
   file { $config_file:
     ensure  => file,
     mode    => '0644',
@@ -194,13 +202,7 @@ class pabawi::proxy::nginx (
       'command_whitelist'           => $command_whitelist,
       'command_whitelist_allow_all' => $command_whitelist_allow_all,
     }),
-    require => [
-      File[$config_dir],
-      $manage_package ? {
-        true    => Package['nginx'],
-        default => [],
-      },
-    ],
+    require => $_config_file_require,
     notify  => Service['nginx'],
   }
 

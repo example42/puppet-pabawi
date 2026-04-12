@@ -125,10 +125,10 @@ class pabawi::install::npm (
   # Create .env file using concat
   $env_file_path = "${install_dir}/backend/.env"
   concat { 'pabawi_env_file':
-    path    => $env_file_path,
-    owner   => $user,
-    group   => $group,
-    mode    => '0600',
+    path  => $env_file_path,
+    owner => $user,
+    group => $group,
+    mode  => '0600',
   }
 
   # Base configuration fragment
