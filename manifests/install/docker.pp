@@ -43,7 +43,8 @@
 #   Whether authentication is enabled.
 #
 # @param jwt_secret
-#   JWT secret for authentication (required if auth_enabled is true).
+#   JWT secret for authentication. If not provided, a random secret is
+#   generated automatically.
 #
 # @param database_path
 #   Path to application database file inside the container.
