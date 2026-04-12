@@ -26,6 +26,10 @@
 # @param ports
 #   Port mappings for the container (host => container).
 #
+# @param bind_address
+#   IP address to bind port mappings to. Defaults to 127.0.0.1 when
+#   pabawi::proxy_manage is true (looked up from Hiera), 0.0.0.0 otherwise.
+#
 # @param auto_restart
 #   Whether systemd should restart the container on failure.
 #
@@ -43,7 +47,7 @@
 #
 # @param database_path
 #   Path to application database file inside the container.
-#   Must match a writable path in the container image (default: /data/pabawi.db).
+#   Must match a writable path in the container image (default: /opt/pabawi/data/pabawi.db).
 #
 # @param concurrent_execution_limit
 #   Maximum number of concurrent executions.
@@ -95,13 +99,16 @@ class pabawi::install::docker (
   Hash[String[1], String] $environment = {},
   Array[String[1]] $volumes = [],
   Hash[String[1], String[1]] $ports = { '3000' => '3000' },
+  String[1] $bind_address = lookup('pabawi::proxy_manage', Boolean, 'first', false) ? {
+    true    => '127.0.0.1',
+    default => '0.0.0.0',
+  },
   Boolean $auto_restart = true,
-  Stdlib::Absolutepath $install_dir = '/opt/pabawi',
-  String[1] $log_level = 'info',
+  Stdlib::Absolutepath $install_dir = '/opt/pabawi',  String[1] $log_level = 'info',
   Boolean $auth_enabled = false,
   String[1] $jwt_secret = fqdn_rand_string(64),
-  Stdlib::Absolutepath $database_path = '/data/pabawi.db',
-  Stdlib::Absolutepath $database_host_dir = '/var/lib/pabawi',
+  Stdlib::Absolutepath $database_path = '/opt/pabawi/data/pabawi.db',
+  Stdlib::Absolutepath $database_host_dir = '/opt/pabawi/data',
   Integer $container_uid = 1001,
   Integer $container_gid = 1001,
   Integer $concurrent_execution_limit = 5,
@@ -165,6 +172,7 @@ class pabawi::install::docker (
     target  => 'pabawi_env_file',
     content => @("EOT"),
       # Pabawi Base Configuration
+      HOST=${bind_address}
       LOG_LEVEL=${log_level}
       AUTH_ENABLED=${auth_enabled}
       JWT_SECRET=${jwt_secret}
@@ -178,7 +186,7 @@ class pabawi::install::docker (
 
   # Build docker run arguments
   $database_container_dir = dirname($database_path)
-  $port_args = $ports.map |$host, $container| { "-p ${host}:${container}" }.join(' ')
+  $port_args = $ports.map |$host, $container| { "-p ${bind_address}:${host}:${container}" }.join(' ')
   $all_volumes = $volumes + ["${database_host_dir}:${database_container_dir}"]
   $volume_args = $all_volumes.map |$v| { "-v ${v}" }.join(' ')
   $env_args = $environment.map |$key, $value| { "-e ${key}=${value}" }.join(' ')

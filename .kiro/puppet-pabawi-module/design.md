@@ -2,7 +2,7 @@
 
 ## Overview
 
-This Puppet module provides a flexible, modular approach to installing and configuring the Pabawi application with support for multiple installation methods (npm, docker), proxy configurations (nginx with SSL), and various integrations (Bolt, PuppetDB, and extensible integration framework). The design emphasizes separation of concerns through a class-based architecture where each component (proxy, installation, integrations) can be independently enabled, disabled, or swapped with alternative implementations.
+This Puppet module provides a flexible, modular approach to installing and configuring the Pabawi application with support for multiple installation methods (npm, docker), proxy configurations (nginx with SSL), and various integrations (Bolt, PuppetDB, Puppetserver, Hiera, Ansible, SSH, Proxmox, and AWS). The design emphasizes separation of concerns through a class-based architecture where each component (proxy, installation, integrations) can be independently enabled, disabled, or swapped with alternative implementations.
 
 The module follows Puppet best practices with Hiera-driven configuration, allowing users to customize behavior through data rather than code modifications. The architecture supports extensibility for future integrations while maintaining backward compatibility and sensible defaults.
 
@@ -28,7 +28,12 @@ graph TD
     
     K -->|true| N[pabawi::integrations::bolt]
     L -->|true| O[pabawi::integrations::puppetdb]
-    M --> P[pabawi::integrations::*]
+    M --> P[pabawi::integrations::puppetserver]
+    M --> Q2[pabawi::integrations::hiera]
+    M --> R2[pabawi::integrations::ansible]
+    M --> S2[pabawi::integrations::ssh]
+    M --> T2[pabawi::integrations::proxmox]
+    M --> U2[pabawi::integrations::aws]
     
     F --> Q[SSL Configuration]
     Q --> R[Self-Signed Certs]
@@ -262,6 +267,69 @@ class pabawi::integrations::puppetdb (
 - Configure SSL certificates for PuppetDB connection
 - Set up query timeout and connection parameters
 - Create integration configuration files
+
+### Component 7: SSH Integration Class (pabawi::integrations::ssh)
+
+**Purpose**: Configure Pabawi integration with direct SSH execution (connection pool, sudo support)
+
+**Interface**:
+```puppet
+class pabawi::integrations::ssh (
+  Boolean $enabled = true,
+  Hash $settings = {},
+) {
+  # Class implementation
+}
+```
+
+**Responsibilities**:
+- Configure SSH connection defaults (host, port, user, key path)
+- Set connection pool and concurrency limits
+- Configure sudo settings for privilege escalation
+- Write SSH_* environment variables to .env via concat fragment
+
+### Component 8: Proxmox Integration Class (pabawi::integrations::proxmox)
+
+**Purpose**: Configure Pabawi integration with Proxmox Virtual Environment for VM/LXC management
+
+**Interface**:
+```puppet
+class pabawi::integrations::proxmox (
+  Boolean $enabled = true,
+  Hash $settings = {},
+  Optional[String[1]] $ssl_ca_source = undef,
+  Optional[String[1]] $ssl_cert_source = undef,
+  Optional[String[1]] $ssl_key_source = undef,
+) {
+  # Class implementation
+}
+```
+
+**Responsibilities**:
+- Configure Proxmox host, port, and authentication (token or username/password)
+- Deploy SSL certificates for Proxmox API connection
+- Write PROXMOX_* environment variables to .env via concat fragment
+- Support token-based (recommended) and username/password authentication
+
+### Component 9: AWS Integration Class (pabawi::integrations::aws)
+
+**Purpose**: Configure Pabawi integration with AWS EC2 for inventory, lifecycle, and provisioning
+
+**Interface**:
+```puppet
+class pabawi::integrations::aws (
+  Boolean $enabled = true,
+  Hash $settings = {},
+) {
+  # Class implementation
+}
+```
+
+**Responsibilities**:
+- Configure AWS credentials (access key, profile, or default chain)
+- Set default region and multi-region discovery
+- Write AWS_* environment variables to .env via concat fragment
+- Support three authentication modes: explicit keys, named profile, default credential chain
 
 ## Data Models
 
@@ -676,16 +744,15 @@ include pabawi
 pabawi::proxy_manage: true
 pabawi::install_manage: true
 
-pabawi::bolt_enable: true
-pabawi::bolt_project_path: '/opt/bolt-project'
-
-pabawi::puppetdb_enable: true
-pabawi::puppetdb_server_url: 'https://puppetdb.example.com:8081'
-
 pabawi::integrations:
-  terraform: true
-  ansible: true
-  custom_integration: true
+  - bolt
+  - puppetdb
+  - puppetserver
+  - hiera
+  - ansible
+  - ssh
+  - proxmox
+  - aws
 
 # In manifest
 include pabawi

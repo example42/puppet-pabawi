@@ -42,6 +42,10 @@
 # @param concurrent_execution_limit
 #   Maximum number of concurrent executions
 #
+# @param bind_address
+#   IP address for the application to listen on. Defaults to 127.0.0.1 when
+#   pabawi::proxy_manage is true (looked up from Hiera), 0.0.0.0 otherwise.
+#
 # @example Basic usage
 #   include pabawi::install::npm
 #
@@ -65,6 +69,10 @@ class pabawi::install::npm (
   Optional[String[1]] $jwt_secret = undef,
   Stdlib::Absolutepath $database_path = '/opt/pabawi/data/pabawi.db',
   Integer $concurrent_execution_limit = 5,
+  String[1] $bind_address = lookup('pabawi::proxy_manage', Boolean, 'first', false) ? {
+    true    => '127.0.0.1',
+    default => '0.0.0.0',
+  },
 ) {
   # Validate auth configuration
   if $auth_enabled and !$jwt_secret {
@@ -128,6 +136,7 @@ class pabawi::install::npm (
     target  => 'pabawi_env_file',
     content => @("EOT"),
       # Pabawi Base Configuration
+      HOST=${bind_address}
       LOG_LEVEL=${log_level}
       AUTH_ENABLED=${auth_enabled}
       JWT_SECRET=${pick($jwt_secret, 'not-set')}
@@ -213,7 +222,7 @@ class pabawi::install::npm (
       Type=simple
       User=${user}
       Group=${group}
-      WorkingDirectory=${install_dir}
+      WorkingDirectory=${install_dir}/backend
       ExecStart=/usr/bin/node ${install_dir}/backend/dist/server.js
       Restart=on-failure
       RestartSec=10

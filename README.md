@@ -24,6 +24,9 @@ Puppet module for managing Pabawi - a unified interface for Puppet ecosystem too
   - [PuppetDB](#puppetdb-integration)
   - [Puppet Server](#puppet-server-integration)
   - [Hiera](#hiera-integration)
+  - [SSH](#ssh-integration)
+  - [Proxmox](#proxmox-integration)
+  - [AWS](#aws-integration)
 - [Examples](#examples)
 - [Reference](#reference)
 - [Limitations](#limitations)
@@ -31,7 +34,7 @@ Puppet module for managing Pabawi - a unified interface for Puppet ecosystem too
 
 ## Description
 
-Pabawi is a unified web interface for interacting with various Puppet ecosystem tools including Bolt, PuppetDB, Puppet Server, Hiera, and Ansible. This Puppet module manages the installation and configuration of Pabawi and its integrations.
+Pabawi is a unified web interface for interacting with various Puppet ecosystem tools including Bolt, PuppetDB, Puppet Server, Hiera, Ansible, SSH, Proxmox, and AWS. This Puppet module manages the installation and configuration of Pabawi and its integrations.
 
 **Key Features:**
 - `.env` file-based configuration for all integrations
@@ -220,8 +223,8 @@ DATABASE_PATH=...
 CONCURRENT_EXECUTION_LIMIT=10
 
 # Bolt Integration (order: 20)
+BOLT_ENABLED=true
 BOLT_PROJECT_PATH=/opt/bolt-project
-COMMAND_WHITELIST=["ls","pwd"]
 ...
 
 # PuppetDB Integration (order: 21)
@@ -239,6 +242,18 @@ HIERA_ENABLED=true
 
 # Ansible Integration (order: 24)
 ANSIBLE_ENABLED=true
+...
+
+# SSH Integration (order: 25)
+SSH_ENABLED=true
+...
+
+# Proxmox Integration (order: 26)
+PROXMOX_ENABLED=true
+...
+
+# AWS Integration (order: 27)
+AWS_ENABLED=true
 ...
 ```
 
@@ -569,6 +584,164 @@ HIERA_ENVIRONMENTS=["production","development","staging"]
 HIERA_FACT_SOURCE_PREFER_PUPPETDB=true
 ```
 
+### SSH Integration
+
+Manages direct SSH execution configuration.
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `enabled` | Boolean | true | Whether the integration is enabled (sets SSH_ENABLED in .env) |
+| `settings` | Hash | {} | Hash of configuration settings (see below) |
+
+**Settings Hash Keys:**
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `config_path` | String | Path to SSH config file |
+| `default_user` | String | Default SSH username |
+| `default_port` | Integer | Default SSH port |
+| `default_key` | String | Path to default SSH private key |
+| `host_key_check` | Boolean | Enable host key checking |
+| `connection_timeout` | Integer | Connection timeout (seconds) |
+| `command_timeout` | Integer | Command timeout (seconds) |
+| `max_connections` | Integer | Maximum total connections |
+| `max_connections_per_host` | Integer | Maximum connections per host |
+| `idle_timeout` | Integer | Idle connection timeout (seconds) |
+| `concurrency_limit` | Integer | Concurrent execution limit |
+
+**Example:**
+
+```yaml
+pabawi::integrations:
+  - ssh
+
+pabawi::integrations::ssh::settings:
+  default_user: 'automation'
+  default_port: 22
+  default_key: '/opt/pabawi/ssh/id_ed25519'
+  host_key_check: true
+  connection_timeout: 30
+  command_timeout: 300
+  max_connections: 50
+  concurrency_limit: 10
+```
+
+**Generated .env entries:**
+```
+SSH_ENABLED=true
+SSH_DEFAULT_USER=automation
+SSH_DEFAULT_PORT=22
+SSH_DEFAULT_KEY=/opt/pabawi/ssh/id_ed25519
+SSH_HOST_KEY_CHECK=true
+SSH_CONNECTION_TIMEOUT=30
+SSH_COMMAND_TIMEOUT=300
+SSH_MAX_CONNECTIONS=50
+SSH_CONCURRENCY_LIMIT=10
+```
+
+### Proxmox Integration
+
+Manages Proxmox VE connection for VM/LXC provisioning and lifecycle management.
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `enabled` | Boolean | true | Whether the integration is enabled (sets PROXMOX_ENABLED in .env) |
+| `settings` | Hash | {} | Hash of configuration settings (see below) |
+| `ssl_ca_source` | String | undef | URL to download CA cert from |
+| `ssl_cert_source` | String | undef | URL to download client cert from |
+| `ssl_key_source` | String | undef | URL to download private key from |
+
+**Settings Hash Keys:**
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `host` | String | Proxmox host (required) |
+| `port` | Integer | Proxmox API port (default 8006) |
+| `token` | String | API token (recommended auth method) |
+| `username` | String | Username (alternative auth) |
+| `password` | String | Password (alternative auth) |
+| `realm` | String | Authentication realm |
+| `ssl_reject_unauthorized` | Boolean | Reject unauthorized certificates |
+| `ssl_ca` | String | Path to CA certificate |
+| `ssl_cert` | String | Path to client certificate |
+| `ssl_key` | String | Path to private key |
+| `timeout` | Integer | API timeout (milliseconds) |
+| `priority` | Integer | Integration priority |
+
+**Example:**
+
+```yaml
+pabawi::integrations:
+  - proxmox
+
+pabawi::integrations::proxmox::settings:
+  host: 'proxmox.example.com'
+  port: 8006
+  token: 'user@pam!tokenid=token-value'
+  ssl_reject_unauthorized: true
+  timeout: 30000
+```
+
+**Generated .env entries:**
+```
+PROXMOX_ENABLED=true
+PROXMOX_HOST=proxmox.example.com
+PROXMOX_PORT=8006
+PROXMOX_TOKEN=user@pam!tokenid=token-value
+PROXMOX_SSL_REJECT_UNAUTHORIZED=true
+PROXMOX_TIMEOUT=30000
+```
+
+### AWS Integration
+
+Manages AWS EC2 integration for inventory discovery, lifecycle actions, and provisioning.
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `enabled` | Boolean | true | Whether the integration is enabled (sets AWS_ENABLED in .env) |
+| `settings` | Hash | {} | Hash of configuration settings (see below) |
+
+**Settings Hash Keys:**
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `access_key_id` | String | AWS access key ID (explicit auth) |
+| `secret_access_key` | String | AWS secret access key (explicit auth) |
+| `default_region` | String | Default AWS region |
+| `regions` | Array[String] | Regions to query for inventory |
+| `session_token` | String | AWS session token (temporary credentials) |
+| `profile` | String | AWS named profile (recommended) |
+| `endpoint` | String | Custom AWS endpoint URL |
+
+**Example:**
+
+```yaml
+pabawi::integrations:
+  - aws
+
+# Using named profile (recommended)
+pabawi::integrations::aws::settings:
+  profile: 'pabawi-prod'
+  default_region: 'us-east-1'
+  regions:
+    - 'us-east-1'
+    - 'eu-west-1'
+```
+
+**Generated .env entries:**
+```
+AWS_ENABLED=true
+AWS_PROFILE=pabawi-prod
+AWS_DEFAULT_REGION=us-east-1
+AWS_REGIONS=["us-east-1","eu-west-1"]
+```
+
 ## Examples
 
 ### Complete Multi-Integration Setup
@@ -587,19 +760,22 @@ pabawi::integrations:
   - puppetdb
   - puppetserver
   - hiera
+  - ssh
+  - proxmox
+  - aws
 
 # Bolt integration configuration
 pabawi::integrations::bolt::manage_package: true
 pabawi::integrations::bolt::settings:
-  project_path: '/opt/bolt-project'
+  project_path: '/opt/pabawi/bolt-project'
   execution_timeout: 300000
 pabawi::integrations::bolt::project_path_source: 'https://github.com/myorg/bolt-project.git'
 
 # Ansible integration configuration
 pabawi::integrations::ansible::manage_package: true
 pabawi::integrations::ansible::settings:
-  inventory_path: '/etc/ansible/inventory'
-  playbook_path: '/etc/ansible/playbooks'
+  inventory_path: '/opt/pabawi/ansible/inventory'
+  playbook_path: '/opt/pabawi/ansible/playbooks'
   execution_timeout: 300000
 pabawi::integrations::ansible::inventory_source: 'https://github.com/myorg/ansible-inventory.git'
 pabawi::integrations::ansible::playbook_source: 'https://github.com/myorg/ansible-playbooks.git'
@@ -609,9 +785,6 @@ pabawi::integrations::puppetdb::settings:
   server_url: 'https://puppetdb.myorg.com'
   port: 8081
   ssl_enabled: true
-  ssl_ca: '/etc/pabawi/ssl/puppetdb/ca.pem'
-  ssl_cert: '/etc/pabawi/ssl/puppetdb/cert.pem'
-  ssl_key: '/etc/pabawi/ssl/puppetdb/key.pem'
   ssl_reject_unauthorized: true
 pabawi::integrations::puppetdb::ssl_ca_source: 'file:///etc/puppetlabs/puppet/ssl/certs/ca.pem'
 pabawi::integrations::puppetdb::ssl_cert_source: 'file:///etc/puppetlabs/puppet/ssl/certs/agent.pem'
@@ -622,9 +795,6 @@ pabawi::integrations::puppetserver::settings:
   server_url: 'https://puppet.myorg.com'
   port: 8140
   ssl_enabled: true
-  ssl_ca: '/etc/pabawi/ssl/puppetserver/ca.pem'
-  ssl_cert: '/etc/pabawi/ssl/puppetserver/cert.pem'
-  ssl_key: '/etc/pabawi/ssl/puppetserver/key.pem'
   ssl_reject_unauthorized: true
   inactivity_threshold: 3600
   cache_ttl: 300000
@@ -633,9 +803,8 @@ pabawi::integrations::puppetserver::ssl_cert_source: 'file:///etc/puppetlabs/pup
 pabawi::integrations::puppetserver::ssl_key_source: 'file:///etc/puppetlabs/puppet/ssl/private_keys/agent.pem'
 
 # Hiera integration configuration
-pabawi::integrations::hiera::manage_package: false
 pabawi::integrations::hiera::settings:
-  control_repo_path: '/opt/control-repo'
+  control_repo_path: '/opt/pabawi/control-repo'
   config_path: 'hiera.yaml'
   environments:
     - 'production'
@@ -643,16 +812,42 @@ pabawi::integrations::hiera::settings:
   fact_source_prefer_puppetdb: true
 pabawi::integrations::hiera::control_repo_source: 'https://github.com/myorg/control-repo.git'
 
+# SSH integration configuration
+pabawi::integrations::ssh::settings:
+  default_user: 'automation'
+  default_port: 22
+  default_key: '/opt/pabawi/ssh/id_ed25519'
+  host_key_check: true
+  connection_timeout: 30
+  max_connections: 50
+  concurrency_limit: 10
+
+# Proxmox integration configuration
+pabawi::integrations::proxmox::settings:
+  host: 'proxmox.myorg.com'
+  port: 8006
+  token: 'automation@pve!pabawi=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
+  ssl_reject_unauthorized: true
+  timeout: 30000
+
+# AWS integration configuration
+pabawi::integrations::aws::settings:
+  profile: 'pabawi-prod'
+  default_region: 'us-east-1'
+  regions:
+    - 'us-east-1'
+    - 'eu-west-1'
+
 # Nginx proxy settings
 pabawi::proxy::nginx::ssl_enable: true
 pabawi::proxy::nginx::ssl_self_signed: false
-pabawi::proxy::nginx::ssl_cert: '/etc/ssl/certs/pabawi.crt'
-pabawi::proxy::nginx::ssl_key: '/etc/ssl/private/pabawi.key'
+pabawi::proxy::nginx::ssl_cert_source: 'puppet:///modules/site/ssl/pabawi.crt'
+pabawi::proxy::nginx::ssl_key_source: 'puppet:///modules/site/ssl/pabawi.key'
 pabawi::proxy::nginx::listen_port: 443
 pabawi::proxy::nginx::backend_port: 3000
 
 # NPM installation settings
-pabawi::install::npm::install_dir: '/opt/pabawi'
+pabawi::install::npm::install_dir: '/opt/pabawi/app'
 pabawi::install::npm::repo_url: 'https://github.com/example42/pabawi.git'
 pabawi::install::npm::version: 'v1.0.0'
 pabawi::install::npm::auth_enabled: true
@@ -695,237 +890,19 @@ pabawi::integrations:
 
 # Configure Bolt
 pabawi::integrations::bolt::settings:
-  project_path: '/opt/bolt-project'
+  project_path: '/opt/pabawi/bolt-project'
 ```
 
 ### Complete Hiera Configuration Examples
 
-#### NPM Installation with Full Integration Stack
+For full Hiera configuration examples covering all integrations (Bolt, PuppetDB, Puppet Server, Hiera, Ansible, SSH, Proxmox, AWS), see the `examples/` directory:
 
-Complete Hiera configuration for NPM-based installation with Bolt, Hiera, PuppetDB, and Puppet Server integrations:
-
-```yaml
----
-# File: data/common.yaml or data/nodes/<node-fqdn>.yaml
-
-# Installation method
-pabawi::install_manage: true
-pabawi::install_class: 'pabawi::install::npm'
-
-# NPM installation settings
-pabawi::install::npm::install_dir: '/opt/pabawi'
-pabawi::install::npm::repo_url: 'https://github.com/example42/pabawi.git'
-pabawi::install::npm::version: 'main'
-pabawi::install::npm::user: 'pabawi'
-pabawi::install::npm::group: 'pabawi'
-pabawi::install::npm::auth_enabled: true
-pabawi::install::npm::jwt_secret: 'change-this-to-a-secure-random-string'
-pabawi::install::npm::log_level: 'info'
-pabawi::install::npm::concurrent_execution_limit: 10
-
-# Proxy configuration
-pabawi::proxy_manage: true
-pabawi::proxy_class: 'pabawi::proxy::nginx'
-
-# Nginx proxy settings
-pabawi::proxy::nginx::server_name: 'pabawi.example.com'
-pabawi::proxy::nginx::listen_port: 443
-pabawi::proxy::nginx::backend_port: 3000
-pabawi::proxy::nginx::ssl_enable: true
-pabawi::proxy::nginx::ssl_self_signed: false
-pabawi::proxy::nginx::ssl_cert: '/etc/ssl/certs/pabawi.example.com.crt'
-pabawi::proxy::nginx::ssl_key: '/etc/ssl/private/pabawi.example.com.key'
-
-# Enable integrations
-pabawi::integrations:
-  - bolt
-  - hiera
-  - puppetdb
-  - puppetserver
-
-# Bolt Integration
-pabawi::integrations::bolt::enabled: true
-pabawi::integrations::bolt::manage_package: true
-pabawi::integrations::bolt::settings:
-  project_path: '/opt/pabawi-bolt-project'
-  execution_timeout: 300000
-pabawi::integrations::bolt::project_path_source: 'https://github.com/example/bolt-project.git'
-
-# Hiera Integration
-pabawi::integrations::hiera::enabled: true
-pabawi::integrations::hiera::manage_package: false
-pabawi::integrations::hiera::settings:
-  control_repo_path: '/opt/pabawi-control-repo'
-  config_path: 'hiera.yaml'
-  environments:
-    - 'production'
-    - 'development'
-    - 'staging'
-  fact_source_prefer_puppetdb: true
-pabawi::integrations::hiera::control_repo_source: 'https://github.com/example/control-repo.git'
-
-# PuppetDB Integration
-pabawi::integrations::puppetdb::enabled: true
-pabawi::integrations::puppetdb::settings:
-  server_url: 'https://puppetdb.example.com'
-  port: 8081
-  ssl_enabled: true
-  ssl_ca: '/etc/pabawi/ssl/puppetdb/ca.pem'
-  ssl_cert: '/etc/pabawi/ssl/puppetdb/cert.pem'
-  ssl_key: '/etc/pabawi/ssl/puppetdb/key.pem'
-  ssl_reject_unauthorized: true
-pabawi::integrations::puppetdb::ssl_ca_source: 'file:///etc/puppetlabs/puppet/ssl/certs/ca.pem'
-pabawi::integrations::puppetdb::ssl_cert_source: 'file:///etc/puppetlabs/puppet/ssl/certs/%{facts.fqdn}.pem'
-pabawi::integrations::puppetdb::ssl_key_source: 'file:///etc/puppetlabs/puppet/ssl/private_keys/%{facts.fqdn}.pem'
-
-# Puppet Server Integration
-pabawi::integrations::puppetserver::enabled: true
-pabawi::integrations::puppetserver::settings:
-  server_url: 'https://puppet.example.com'
-  port: 8140
-  ssl_enabled: true
-  ssl_ca: '/etc/pabawi/ssl/puppetserver/ca.pem'
-  ssl_cert: '/etc/pabawi/ssl/puppetserver/cert.pem'
-  ssl_key: '/etc/pabawi/ssl/puppetserver/key.pem'
-  ssl_reject_unauthorized: true
-  inactivity_threshold: 3600
-  cache_ttl: 300000
-  circuit_breaker_threshold: 5
-  circuit_breaker_timeout: 60000
-  circuit_breaker_reset_timeout: 30000
-pabawi::integrations::puppetserver::ssl_ca_source: 'file:///etc/puppetlabs/puppet/ssl/certs/ca.pem'
-pabawi::integrations::puppetserver::ssl_cert_source: 'file:///etc/puppetlabs/puppet/ssl/certs/%{facts.fqdn}.pem'
-pabawi::integrations::puppetserver::ssl_key_source: 'file:///etc/puppetlabs/puppet/ssl/private_keys/%{facts.fqdn}.pem'
-```
-
-#### Docker Installation with Full Integration Stack
-
-Complete Hiera configuration for Docker-based installation with the same integrations:
-
-```yaml
----
-# File: data/common.yaml or data/nodes/<node-fqdn>.yaml
-
-# Installation method
-pabawi::install_manage: true
-pabawi::install_class: 'pabawi::install::docker'
-
-# Docker installation settings
-pabawi::install::docker::install_dir: '/opt/pabawi'
-pabawi::install::docker::image: 'example42/pabawi:latest'
-pabawi::install::docker::container_name: 'pabawi'
-pabawi::install::docker::backend_port: 3000
-pabawi::install::docker::user: 'pabawi'
-pabawi::install::docker::group: 'pabawi'
-pabawi::install::docker::auth_enabled: true
-pabawi::install::docker::jwt_secret: 'change-this-to-a-secure-random-string'
-pabawi::install::docker::log_level: 'info'
-pabawi::install::docker::concurrent_execution_limit: 10
-pabawi::install::docker::volumes:
-  - '/opt/pabawi-bolt-project:/app/bolt-project:ro'
-  - '/opt/pabawi-control-repo:/app/control-repo:ro'
-  - '/etc/pabawi/ssl:/app/ssl:ro'
-  - '/opt/pabawi/data:/app/data'
-
-# Proxy configuration
-pabawi::proxy_manage: true
-pabawi::proxy_class: 'pabawi::proxy::nginx'
-
-# Nginx proxy settings
-pabawi::proxy::nginx::server_name: 'pabawi.example.com'
-pabawi::proxy::nginx::listen_port: 443
-pabawi::proxy::nginx::backend_port: 3000
-pabawi::proxy::nginx::ssl_enable: true
-pabawi::proxy::nginx::ssl_self_signed: false
-pabawi::proxy::nginx::ssl_cert: '/etc/ssl/certs/pabawi.example.com.crt'
-pabawi::proxy::nginx::ssl_key: '/etc/ssl/private/pabawi.example.com.key'
-
-# Enable integrations
-pabawi::integrations:
-  - bolt
-  - hiera
-  - puppetdb
-  - puppetserver
-
-# Bolt Integration
-pabawi::integrations::bolt::enabled: true
-pabawi::integrations::bolt::manage_package: true
-pabawi::integrations::bolt::settings:
-  project_path: '/app/bolt-project'  # Path inside container
-  execution_timeout: 300000
-pabawi::integrations::bolt::project_path_source: 'https://github.com/example/bolt-project.git'
-
-# Hiera Integration
-pabawi::integrations::hiera::enabled: true
-pabawi::integrations::hiera::manage_package: false
-pabawi::integrations::hiera::settings:
-  control_repo_path: '/app/control-repo'  # Path inside container
-  config_path: 'hiera.yaml'
-  environments:
-    - 'production'
-    - 'development'
-    - 'staging'
-  fact_source_prefer_puppetdb: true
-pabawi::integrations::hiera::control_repo_source: 'https://github.com/example/control-repo.git'
-
-# PuppetDB Integration
-pabawi::integrations::puppetdb::enabled: true
-pabawi::integrations::puppetdb::settings:
-  server_url: 'https://puppetdb.example.com'
-  port: 8081
-  ssl_enabled: true
-  ssl_ca: '/app/ssl/puppetdb/ca.pem'  # Path inside container
-  ssl_cert: '/app/ssl/puppetdb/cert.pem'
-  ssl_key: '/app/ssl/puppetdb/key.pem'
-  ssl_reject_unauthorized: true
-pabawi::integrations::puppetdb::ssl_ca_source: 'file:///etc/puppetlabs/puppet/ssl/certs/ca.pem'
-pabawi::integrations::puppetdb::ssl_cert_source: 'file:///etc/puppetlabs/puppet/ssl/certs/%{facts.fqdn}.pem'
-pabawi::integrations::puppetdb::ssl_key_source: 'file:///etc/puppetlabs/puppet/ssl/private_keys/%{facts.fqdn}.pem'
-
-# Puppet Server Integration
-pabawi::integrations::puppetserver::enabled: true
-pabawi::integrations::puppetserver::settings:
-  server_url: 'https://puppet.example.com'
-  port: 8140
-  ssl_enabled: true
-  ssl_ca: '/app/ssl/puppetserver/ca.pem'  # Path inside container
-  ssl_cert: '/app/ssl/puppetserver/cert.pem'
-  ssl_key: '/app/ssl/puppetserver/key.pem'
-  ssl_reject_unauthorized: true
-  inactivity_threshold: 3600
-  cache_ttl: 300000
-  circuit_breaker_threshold: 5
-  circuit_breaker_timeout: 60000
-  circuit_breaker_reset_timeout: 30000
-pabawi::integrations::puppetserver::ssl_ca_source: 'file:///etc/puppetlabs/puppet/ssl/certs/ca.pem'
-pabawi::integrations::puppetserver::ssl_cert_source: 'file:///etc/puppetlabs/puppet/ssl/certs/%{facts.fqdn}.pem'
-pabawi::integrations::puppetserver::ssl_key_source: 'file:///etc/puppetlabs/puppet/ssl/private_keys/%{facts.fqdn}.pem'
-```
-
-#### Key Differences Between NPM and Docker Configurations
-
-**NPM Installation:**
-- `.env` file location: `/opt/pabawi/backend/.env`
-- Paths reference host filesystem directly
-- Bolt project path: `/opt/pabawi-bolt-project`
-- Control repo path: `/opt/pabawi-control-repo`
-- SSL certificates: `/etc/pabawi/ssl/<integration>/`
-
-**Docker Installation:**
-- `.env` file location: `/opt/pabawi/.env` (mounted into container)
-- Paths reference container filesystem (mounted volumes)
-- Bolt project path: `/app/bolt-project` (mounted from `/opt/pabawi-bolt-project`)
-- Control repo path: `/app/control-repo` (mounted from `/opt/pabawi-control-repo`)
-- SSL certificates: `/app/ssl/<integration>/` (mounted from `/etc/pabawi/ssl`)
-- Requires volume mounts in `pabawi::install::docker::volumes`
-
-**Important Notes:**
-1. Replace `example.com` with your actual domain
-2. Change JWT secret to a secure random string
-3. Update git repository URLs to your actual repositories
-4. Adjust SSL certificate paths if using different locations
-5. For Docker, ensure volume mounts align with paths in settings
-6. Use Puppet facts (e.g., `%{facts.fqdn}`) for dynamic certificate paths
+- `examples/hiera_full_integrations.yaml` — Complete Hiera data with every integration
+- `examples/full_integrations.pp` — Puppet-centric setup (Bolt, PuppetDB, Puppet Server, Hiera)
+- `examples/ssh_ansible_proxmox.pp` — Agentless setup (SSH, Ansible, Proxmox)
+- `examples/docker_custom_ssl.pp` — Docker installation with custom SSL
+- `examples/basic_nginx_npm.pp` — Minimal defaults
+- `examples/minimal_no_proxy.pp` — No proxy, npm only
 
 ## Reference
 
@@ -965,7 +942,10 @@ puppet-pabawi/
 │       ├── ansible.pp               # Ansible integration
 │       ├── puppetdb.pp              # PuppetDB integration
 │       ├── puppetserver.pp          # Puppet Server integration
-│       └── hiera.pp                 # Hiera integration
+│       ├── hiera.pp                 # Hiera integration
+│       ├── ssh.pp                   # SSH integration
+│       ├── proxmox.pp              # Proxmox integration
+│       └── aws.pp                   # AWS integration
 ├── data/
 │   └── common.yaml                  # Default Hiera data
 ├── examples/                        # Usage examples

@@ -27,13 +27,8 @@
 #     },
 #   }
 #
-# @example With git repository
+# @example Minimal usage with git repository (control_repo_path defaults to /opt/pabawi/control-repo)
 #   class { 'pabawi::integrations::hiera':
-#     settings => {
-#       'control_repo_path' => '/opt/pabawi/control-repo',
-#       'config_path'       => 'hiera_pabawi.yaml',
-#       'environments'      => ['production'],
-#     },
 #     control_repo_source => 'https://github.com/example/control-repo.git',
 #   }
 #
@@ -43,12 +38,11 @@ class pabawi::integrations::hiera (
   Boolean $manage_package = false,
   Optional[String[1]] $control_repo_source = undef,
 ) {
-  # Validate required parameters when integration is enabled
-  if $enabled {
-    if $control_repo_source and !$settings['control_repo_path'] {
-      fail('pabawi::integrations::hiera: settings[\'control_repo_path\'] is required when control_repo_source is provided')
-    }
+  # Merge sane defaults for local paths when source is provided but path is not
+  $_default_settings = {
+    'control_repo_path' => '/opt/pabawi/control-repo',
   }
+  $_settings = $_default_settings + $settings
 
   # Manage hiera package if requested
   if $manage_package {
@@ -59,7 +53,7 @@ class pabawi::integrations::hiera (
 
   # Clone git repository if source is provided
   if $control_repo_source {
-    $control_repo_path = $settings['control_repo_path']
+    $control_repo_path = $_settings['control_repo_path']
     # Ensure parent directory exists
     $parent_dir = dirname($control_repo_path)
     exec { "create_hiera_parent_dir_${control_repo_path}":
@@ -78,7 +72,7 @@ class pabawi::integrations::hiera (
 
   # Transform settings hash values to .env format
   # Arrays -> JSON, Booleans -> lowercase strings, Integers -> strings, undef/empty -> 'not-set'
-  $env_vars = $settings.reduce({}) |$memo, $pair| {
+  $env_vars = $_settings.reduce({}) |$memo, $pair| {
     $key = $pair[0]
     $value = $pair[1]
 

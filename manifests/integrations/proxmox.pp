@@ -1,14 +1,15 @@
-# @summary Configure Pabawi integration with PuppetDB
+# @summary Configure Pabawi integration with Proxmox VE
 #
-# This class manages the integration between Pabawi and PuppetDB,
-# including SSL certificate deployment and .env configuration.
+# This class manages the integration between Pabawi and Proxmox Virtual Environment,
+# including SSL certificate deployment and .env configuration for VM/LXC management.
 #
 # @param enabled
-#   Whether the integration is enabled (sets PUPPETDB_ENABLED in .env)
+#   Whether the integration is enabled (sets PROXMOX_ENABLED in .env)
 #
 # @param settings
-#   Hash of Pabawi application configuration settings written to .env with PUPPETDB_ prefix.
-#   Supported keys: server_url, port, ssl_enabled, ssl_ca, ssl_cert, ssl_key, ssl_reject_unauthorized
+#   Hash of Pabawi application configuration settings written to .env with PROXMOX_ prefix.
+#   Supported keys: host, port, token, username, password, realm,
+#   ssl_reject_unauthorized, ssl_ca, ssl_cert, ssl_key, timeout, priority
 #
 # @param ssl_ca_source
 #   Source URL for SSL CA certificate (supports file://, https://, or local path).
@@ -22,45 +23,56 @@
 #   Source URL for SSL private key (supports file://, https://, or local path).
 #   Deploys to path specified in settings['ssl_key']
 #
-# @example Basic usage with settings hash
-#   class { 'pabawi::integrations::puppetdb':
+# @example Basic usage with token authentication (recommended)
+#   class { 'pabawi::integrations::proxmox':
 #     settings => {
-#       'server_url'                => 'https://puppetdb.example.com',
-#       'port'                      => 8081,
-#       'ssl_enabled'               => true,
-#       'ssl_ca'                    => '/opt/pabawi/certs/ca.pem',
-#       'ssl_cert'                  => '/opt/pabawi/certs/client.pem',
-#       'ssl_key'                   => '/opt/pabawi/certs/client-key.pem',
+#       'host'  => 'proxmox.example.com',
+#       'port'  => 8006,
+#       'token' => 'user@pam!tokenid=token-value',
+#     },
+#   }
+#
+# @example With username/password and SSL certificates
+#   class { 'pabawi::integrations::proxmox':
+#     settings        => {
+#       'host'                      => 'proxmox.example.com',
+#       'port'                      => 8006,
+#       'username'                  => 'root@pam',
+#       'password'                  => 'secret',
+#       'realm'                     => 'pam',
 #       'ssl_reject_unauthorized'   => true,
+#       'ssl_ca'                    => '/opt/pabawi/certs/proxmox/ca.pem',
+#       'ssl_cert'                  => '/opt/pabawi/certs/proxmox/cert.pem',
+#       'ssl_key'                   => '/opt/pabawi/certs/proxmox/key.pem',
+#       'timeout'                   => 30000,
+#       'priority'                  => 7,
 #     },
+#     ssl_ca_source   => 'file:///etc/ssl/certs/proxmox-ca.pem',
+#     ssl_cert_source => 'file:///etc/ssl/certs/proxmox-cert.pem',
+#     ssl_key_source  => 'file:///etc/ssl/private/proxmox-key.pem',
 #   }
 #
-# @example With SSL certificates from sources
-#   class { 'pabawi::integrations::puppetdb':
-#     settings => {
-#       'server_url'  => 'https://puppetdb.example.com',
-#       'ssl_enabled' => true,
-#       'ssl_ca'      => '/opt/pabawi/certs/puppetdb/ca.pem',
-#       'ssl_cert'    => '/opt/pabawi/certs/puppetdb/cert.pem',
-#       'ssl_key'     => '/opt/pabawi/certs/puppetdb/key.pem',
-#     },
-#     ssl_ca_source   => 'file:///etc/puppetlabs/puppet/ssl/certs/ca.pem',
-#     ssl_cert_source => 'file:///etc/puppetlabs/puppet/ssl/certs/agent.pem',
-#     ssl_key_source  => 'file:///etc/puppetlabs/puppet/ssl/private_keys/agent.pem',
-#   }
+# @example Via Hiera
+#   pabawi::integrations::proxmox::enabled: true
+#   pabawi::integrations::proxmox::settings:
+#     host: 'proxmox.example.com'
+#     port: 8006
+#     token: 'user@pam!tokenid=token-value'
+#     ssl_reject_unauthorized: true
+#     timeout: 30000
 #
-class pabawi::integrations::puppetdb (
+class pabawi::integrations::proxmox (
   Boolean $enabled = true,
   Hash $settings = {},
   Optional[String[1]] $ssl_ca_source = undef,
   Optional[String[1]] $ssl_cert_source = undef,
   Optional[String[1]] $ssl_key_source = undef,
 ) {
-  # Merge sane defaults for local paths when source is provided but path is not
+  # Merge sane defaults for SSL paths
   $_default_settings = {
-    'ssl_ca'   => '/opt/pabawi/certs/puppetdb/ca.pem',
-    'ssl_cert' => '/opt/pabawi/certs/puppetdb/cert.pem',
-    'ssl_key'  => '/opt/pabawi/certs/puppetdb/key.pem',
+    'ssl_ca'   => '/opt/pabawi/certs/proxmox/ca.pem',
+    'ssl_cert' => '/opt/pabawi/certs/proxmox/cert.pem',
+    'ssl_key'  => '/opt/pabawi/certs/proxmox/key.pem',
   }
   $_settings = $_default_settings + $settings
 
@@ -86,7 +98,7 @@ class pabawi::integrations::puppetdb (
     }
     # Handle https:// URLs
     elsif $ssl_ca_source =~ /^https:\/\/.+$/ {
-      exec { 'download_puppetdb_ssl_ca':
+      exec { 'download_proxmox_ssl_ca':
         command => "curl -sL -o ${ssl_ca_path} ${ssl_ca_source}",
         path    => ['/usr/bin', '/bin'],
         creates => $ssl_ca_path,
@@ -133,7 +145,7 @@ class pabawi::integrations::puppetdb (
     }
     # Handle https:// URLs
     elsif $ssl_cert_source =~ /^https:\/\/.+$/ {
-      exec { 'download_puppetdb_ssl_cert':
+      exec { 'download_proxmox_ssl_cert':
         command => "curl -sL -o ${ssl_cert_path} ${ssl_cert_source}",
         path    => ['/usr/bin', '/bin'],
         creates => $ssl_cert_path,
@@ -180,7 +192,7 @@ class pabawi::integrations::puppetdb (
     }
     # Handle https:// URLs
     elsif $ssl_key_source =~ /^https:\/\/.+$/ {
-      exec { 'download_puppetdb_ssl_key':
+      exec { 'download_proxmox_ssl_key':
         command => "curl -sL -o ${ssl_key_path} ${ssl_key_source}",
         path    => ['/usr/bin', '/bin'],
         creates => $ssl_key_path,
@@ -223,7 +235,7 @@ class pabawi::integrations::puppetdb (
     }
 
     $env_key = upcase($key)
-    $memo + { "PUPPETDB_${env_key}" => $transformed }
+    $memo + { "PROXMOX_${env_key}" => $transformed }
   }
 
   # Build environment variable lines
@@ -232,13 +244,13 @@ class pabawi::integrations::puppetdb (
   }.join("\n")
 
   # Add configuration to .env file via concat fragment
-  concat::fragment { 'pabawi_env_puppetdb':
+  concat::fragment { 'pabawi_env_proxmox':
     target  => 'pabawi_env_file',
     content => @("EOT"),
-      # PuppetDB Integration
-      PUPPETDB_ENABLED=${enabled}
+      # Proxmox Integration
+      PROXMOX_ENABLED=${enabled}
       ${env_lines}
       | EOT
-    order   => '21',
+    order   => '26',
   }
 }
