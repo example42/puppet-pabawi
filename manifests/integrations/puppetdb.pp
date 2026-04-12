@@ -64,6 +64,9 @@ class pabawi::integrations::puppetdb (
   }
   $_settings = $_default_settings + $settings
 
+  if ($ssl_ca_source or $ssl_cert_source or $ssl_key_source) and !($ssl_ca_source and $ssl_cert_source and $ssl_key_source) {
+    fail('When configuring pabawi::integrations::puppetdb SSL sources, ssl_ca_source, ssl_cert_source, and ssl_key_source must all be set together.')
+  }
   # Deploy SSL certificates if sources are provided
   if $ssl_ca_source {
     $ssl_ca_path   = $_settings['ssl_ca']
