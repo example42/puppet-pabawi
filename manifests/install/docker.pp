@@ -1,56 +1,85 @@
-# @summary Install Pabawi using Docker containers
+# @summary Install Pabawi as a Docker container managed by systemd
 #
-# This class manages the installation of Pabawi using Docker,
-# including Docker setup, image management, and container lifecycle.
+# This class runs the Pabawi Docker container as a native systemd service
+# using `docker run` directly, without requiring the puppetlabs/docker module.
+# Docker packages can optionally be installed by this class.
 #
 # @param manage_docker
-#   Whether to manage the Docker installation. Set to false if Docker is managed elsewhere.
+#   Whether to install Docker packages. Default: false (assumes Docker is
+#   already installed and managed elsewhere).
+#
+# @param docker_package
+#   Name of the Docker package to install when manage_docker is true.
 #
 # @param image
-#   Docker image to use for Pabawi
+#   Docker image to use for Pabawi.
 #
 # @param container_name
-#   Name for the Docker container
+#   Name for the Docker container.
 #
 # @param environment
-#   Environment variables to pass to the container
+#   Environment variables to pass to the container.
 #
 # @param volumes
-#   Volume mounts for the container
+#   Volume mounts for the container (Docker -v format strings).
 #
 # @param ports
-#   Port mappings for the container (host => container)
+#   Port mappings for the container (host => container).
 #
 # @param auto_restart
-#   Whether to automatically restart the container on failure
+#   Whether systemd should restart the container on failure.
+#
+# @param install_dir
+#   Directory for configuration files (.env).
 #
 # @param log_level
-#   Application log level (debug, info, warn, error)
+#   Application log level (debug, info, warn, error).
 #
 # @param auth_enabled
-#   Whether authentication is enabled
+#   Whether authentication is enabled.
 #
 # @param jwt_secret
-#   JWT secret for authentication (required if auth_enabled is true)
+#   JWT secret for authentication (required if auth_enabled is true).
 #
 # @param database_path
-#   Path to application database file
+#   Path to application database file inside the container.
+#   Must match a writable path in the container image (default: /data/pabawi.db).
 #
 # @param concurrent_execution_limit
-#   Maximum number of concurrent executions
+#   Maximum number of concurrent executions.
 #
 # @param command_whitelist
-#   Array of allowed commands for execution control
+#   Array of allowed commands for execution control.
 #
 # @param command_whitelist_allow_all
-#   Whether to bypass command whitelist and allow all commands
+#   Whether to bypass command whitelist and allow all commands.
 #
-# @example Basic usage
+# @param database_host_dir
+#   Host directory to mount for the database. Will be mapped to the
+#   container directory containing database_path.
+#
+# @param container_uid
+#   UID of the application user inside the container. Used to set
+#   ownership on the host database directory.
+#
+# @param container_gid
+#   GID of the application group inside the container.
+#
+# @param docker_extra_args
+#   Additional arguments to pass to `docker run`.
+#
+# @example Basic usage (Docker already installed)
 #   include pabawi::install::docker
+#
+# @example Install Docker packages and use custom image
+#   class { 'pabawi::install::docker':
+#     manage_docker => true,
+#     image         => 'example42/pabawi:v1.2.3',
+#   }
 #
 # @example Custom configuration
 #   class { 'pabawi::install::docker':
-#     image       => 'pabawi/pabawi:v1.2.3',
+#     image       => 'example42/pabawi:v1.2.3',
 #     environment => {
 #       'NODE_ENV' => 'production',
 #       'PORT'     => '3000',
@@ -59,7 +88,8 @@
 #   }
 #
 class pabawi::install::docker (
-  Boolean $manage_docker = true,
+  Boolean $manage_docker = false,
+  String[1] $docker_package = 'docker-ce',
   String[1] $image = 'example42/pabawi:latest',
   String[1] $container_name = 'pabawi',
   Hash[String[1], String] $environment = {},
@@ -69,15 +99,30 @@ class pabawi::install::docker (
   Stdlib::Absolutepath $install_dir = '/opt/pabawi',
   String[1] $log_level = 'info',
   Boolean $auth_enabled = false,
-  Optional[String[1]] $jwt_secret = undef,
-  Stdlib::Absolutepath $database_path = '/var/lib/pabawi/pabawi.db',
+  String[1] $jwt_secret = fqdn_rand_string(64),
+  Stdlib::Absolutepath $database_path = '/data/pabawi.db',
+  Stdlib::Absolutepath $database_host_dir = '/var/lib/pabawi',
+  Integer $container_uid = 1001,
+  Integer $container_gid = 1001,
   Integer $concurrent_execution_limit = 5,
   Array[String[1]] $command_whitelist = [],
   Boolean $command_whitelist_allow_all = false,
+  String $docker_extra_args = '',
 ) {
-  # Validate auth configuration
-  if $auth_enabled and !$jwt_secret {
-    fail('pabawi::install::docker: jwt_secret is required when auth_enabled is true')
+  # Docker binary path
+  $docker_bin = '/usr/bin/docker'
+
+  # Optionally install Docker packages
+  if $manage_docker {
+    package { $docker_package:
+      ensure => installed,
+    }
+
+    service { 'docker':
+      ensure  => running,
+      enable  => true,
+      require => Package[$docker_package],
+    }
   }
 
   # Create installation directory for .env file
@@ -88,17 +133,16 @@ class pabawi::install::docker (
     mode   => '0755',
   }
 
-  # Create database directory
-  $database_dir = dirname($database_path)
-  exec { "create_database_dir_${database_path}":
-    command => "mkdir -p ${database_dir}",
+  # Create database host directory with container user ownership
+  exec { "create_database_dir_${database_host_dir}":
+    command => "mkdir -p ${database_host_dir}",
     path    => ['/usr/bin', '/bin'],
-    creates => $database_dir,
+    creates => $database_host_dir,
   }
-  -> file { $database_dir:
+  -> file { $database_host_dir:
     ensure => directory,
-    owner  => 'root',
-    group  => 'root',
+    owner  => $container_uid,
+    group  => $container_gid,
     mode   => '0755',
   }
 
@@ -123,7 +167,7 @@ class pabawi::install::docker (
       # Pabawi Base Configuration
       LOG_LEVEL=${log_level}
       AUTH_ENABLED=${auth_enabled}
-      JWT_SECRET=${pick($jwt_secret, 'not-set')}
+      JWT_SECRET=${jwt_secret}
       DATABASE_PATH=${database_path}
       CONCURRENT_EXECUTION_LIMIT=${concurrent_execution_limit}
       COMMAND_WHITELIST=${command_whitelist_json}
@@ -132,34 +176,84 @@ class pabawi::install::docker (
     order   => '10',
   }
 
-  # Conditionally manage Docker installation
-  if $manage_docker {
-    class { 'docker':
-      ensure => present,
-    }
-  }
+  # Build docker run arguments
+  $database_container_dir = dirname($database_path)
+  $port_args = $ports.map |$host, $container| { "-p ${host}:${container}" }.join(' ')
+  $all_volumes = $volumes + ["${database_host_dir}:${database_container_dir}"]
+  $volume_args = $all_volumes.map |$v| { "-v ${v}" }.join(' ')
+  $env_args = $environment.map |$key, $value| { "-e ${key}=${value}" }.join(' ')
 
-  # Pull the Docker image
-  docker::image { $image:
-    ensure  => present,
+  $docker_run_args = [
+    '--rm',
+    "--name ${container_name}",
+    "--env-file ${env_file_path}",
+    $port_args,
+    $volume_args,
+    $env_args,
+    $docker_extra_args,
+    $image,
+  ].filter |$arg| { $arg != '' }.join(' ')
+
+  # Pull the image before starting the service
+  exec { "docker_pull_${container_name}":
+    command => "${docker_bin} pull ${image}",
+    path    => ['/usr/bin', '/bin'],
+    unless  => "${docker_bin} image inspect ${image} > /dev/null 2>&1",
     require => $manage_docker ? {
-      true    => Class['docker'],
-      default => undef,
+      true    => Service['docker'],
+      default => [],
     },
   }
 
-  # Create and run the container
-  docker::run { $container_name:
-    image   => $image,
-    env     => $environment.map |$key, $value| { "${key}=${value}" },
-    volumes => $volumes + ["${env_file_path}:/app/.env:ro"],
-    ports   => $ports.map |$host, $container| { "${host}:${container}" },
-    restart => $auto_restart ? {
-      true    => 'always',
-      default => 'no',
-    },
-    require => [
-      Docker::Image[$image],
+  # Create systemd service file
+  file { "/etc/systemd/system/${container_name}.service":
+    ensure  => file,
+    mode    => '0644',
+    owner   => 'root',
+    group   => 'root',
+    content => @("EOT"),
+      [Unit]
+      Description=Pabawi Docker Container
+      After=network-online.target docker.service
+      Wants=network-online.target
+      Requires=docker.service
+
+      [Service]
+      Type=simple
+      ExecStartPre=-${docker_bin} stop ${container_name}
+      ExecStartPre=-${docker_bin} rm ${container_name}
+      ExecStart=${docker_bin} run ${docker_run_args}
+      ExecStop=${docker_bin} stop ${container_name}
+      Restart=${auto_restart ? { true => 'on-failure', default => 'no' }}
+      RestartSec=10
+      StandardOutput=journal
+      StandardError=journal
+
+      [Install]
+      WantedBy=multi-user.target
+      | EOT
+    notify  => Exec["systemd_reload_${container_name}"],
+  }
+
+  # Reload systemd when service file changes
+  exec { "systemd_reload_${container_name}":
+    command     => 'systemctl daemon-reload',
+    path        => ['/usr/bin', '/bin'],
+    refreshonly => true,
+  }
+
+  # Manage the container service
+  service { $container_name:
+    ensure    => running,
+    enable    => true,
+    require   => [
+      File["/etc/systemd/system/${container_name}.service"],
+      Exec["docker_pull_${container_name}"],
+      Exec["systemd_reload_${container_name}"],
+      Concat['pabawi_env_file'],
+    ],
+    subscribe => [
+      File["/etc/systemd/system/${container_name}.service"],
       Concat['pabawi_env_file'],
     ],
   }
